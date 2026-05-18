@@ -74,26 +74,26 @@ Explicitly excluded from FeelTrace v1 and v2. Adding these would change the prod
 
 ## Traceability
 
-*Populated by roadmapper*
+*Populated by roadmapper — 2026-05-18*
 
-| REQ-ID | Phase |
-|--------|-------|
-| CRAWL-01 | — |
-| CRAWL-02 | — |
-| CRAWL-03 | — |
-| SIG-01 | — |
-| SIG-02 | — |
-| SIG-03 | — |
-| SIG-04 | — |
-| AI-01 | — |
-| AI-02 | — |
-| AI-03 | — |
-| AI-04 | — |
-| DASH-01 | — |
-| DASH-02 | — |
-| DASH-03 | — |
-| DASH-04 | — |
-| INFRA-01 | — |
-| INFRA-02 | — |
-| INFRA-03 | — |
-| INFRA-04 | — |
+| REQ-ID | Phase | Status |
+|--------|-------|--------|
+| CRAWL-01 | Phase 1 | Pending |
+| CRAWL-02 | Phase 2 | Pending |
+| CRAWL-03 | Phase 2 | Pending |
+| SIG-01 | Phase 2 | Pending |
+| SIG-02 | Phase 2 | Pending |
+| SIG-03 | Phase 2 | Pending |
+| SIG-04 | Phase 2 | Pending |
+| AI-01 | Phase 3 | Pending |
+| AI-02 | Phase 3 | Pending |
+| AI-03 | Phase 3 | Pending |
+| AI-04 | Phase 3 | Pending |
+| DASH-01 | Phase 4 | Pending |
+| DASH-02 | Phase 4 | Pending |
+| DASH-03 | Phase 4 | Pending |
+| DASH-04 | Phase 4 | Pending |
+| INFRA-01 | Phase 1 | Pending |
+| INFRA-02 | Phase 1 | Pending |
+| INFRA-03 | Phase 1 | Pending |
+| INFRA-04 | Phase 1 | Pending |
