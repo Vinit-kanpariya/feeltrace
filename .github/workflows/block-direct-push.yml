@@ -1,0 +1,77 @@
+# SoluteLabs Harness - server-side push policy
+#
+# Client-side pre-push hooks can be bypassed with --no-verify. This workflow
+# is the only reliable defense: it runs on every push to a protected branch
+# and fails the build if the push was NOT a merge from a PR.
+#
+# Combine with GitHub branch protection (Settings -> Branches) for the
+# strongest guarantee:
+#   - Require a pull request before merging
+#   - Require status checks to pass: "verify-pr-origin"
+#   - Do not allow bypassing the above settings
+#
+# Drop-in copy: lives at .github/workflows/block-direct-push.yml.
+
+name: verify-pr-origin
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - "release/**"
+      - "prod"
+      - "prod-*"
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  verify-pr-origin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Verify commit is associated with a PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+
+          # Authoritative check: ask GitHub directly which PRs are associated
+          # with this commit. The /commits/{sha}/pulls endpoint works for
+          # squash, merge, AND rebase-merge strategies (it walks the merge
+          # graph, not the commit subject), so it doesn't miss rebased
+          # commits the way a subject-regex would.
+          pr_count=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            "repos/$REPO/commits/$SHA/pulls" \
+            --jq 'length' 2>/dev/null || echo 0)
+
+          if [ "$pr_count" -gt 0 ]; then
+            echo "OK: commit $SHA is associated with $pr_count PR(s)."
+            gh api "repos/$REPO/commits/$SHA/pulls" \
+              --jq '.[] | "  PR #\(.number): \(.title)"' || true
+            exit 0
+          fi
+
+          # Last-resort fallback: look at the commit subject for an explicit
+          # PR reference. This catches squash/merge commits whose API lookup
+          # somehow returns empty (rare, e.g. cross-fork edge cases).
+          subject=$(git log -1 --pretty=%s "$SHA")
+          if echo "$subject" | grep -qE '\(#[0-9]+\)$|^Merge pull request #[0-9]+'; then
+            echo "OK: subject references a PR ($subject)."
+            exit 0
+          fi
+
+          echo "::error::Direct push to $BRANCH by $ACTOR detected (commit $SHA is not associated with any PR)."
+          echo "SoluteLabs policy: protected branches are updated via PR only."
+          echo "If this was an emergency, file an incident in #eng-tools and add a follow-up PR documenting the change."
+          exit 1

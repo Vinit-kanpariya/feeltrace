@@ -1,0 +1,72 @@
+#!/bin/bash
+#
+# Pre-push hook: refuses direct pushes to protected branches (main, master,
+# release/*, prod*). Forces the PR workflow.
+#
+# REUSABLE - copy into any project's .githooks/ directory.
+#
+# Override for documented emergencies only:
+#   GIT_PUSH_TO_MAIN=1 git push origin main
+# The override IS auditable via shell history; use it sparingly.
+#
+# Customize protected branches via .hook-config:
+#   # .hook-config-branches  (one ref pattern per line)
+#   main
+#   master
+#   release/.*
+#   prod.*
+# If absent, defaults below apply.
+
+set -euo pipefail
+
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+# Stdin from git: <local_ref> <local_sha> <remote_ref> <remote_sha>\n...
+# We block when remote_ref matches a protected branch.
+
+if [ "${GIT_PUSH_TO_MAIN:-0}" = "1" ]; then
+  echo -e "${YELLOW}WARN${NC} GIT_PUSH_TO_MAIN=1 override in effect; pre-push protection bypassed."
+  exit 0
+fi
+
+PROJECT_ROOT="$(git rev-parse --show-toplevel)"
+BRANCH_CONFIG="$PROJECT_ROOT/.hook-config-branches"
+
+if [ -f "$BRANCH_CONFIG" ]; then
+  PROTECTED=$(grep -vE '^\s*(#|$)' "$BRANCH_CONFIG" | paste -sd'|' - 2>/dev/null || true)
+else
+  # `prod(-.*)?` matches `prod` and `prod-eu` but NOT `product/foo`. Same
+  # principle for release: only `release/...`, never `release-notes/...`.
+  PROTECTED='main|master|release/.*|prod(-.*)?'
+fi
+
+if [ -z "$PROTECTED" ]; then
+  exit 0
+fi
+
+VIOLATIONS=()
+while IFS=' ' read -r _local_ref _local_sha remote_ref _remote_sha; do
+  [ -z "$remote_ref" ] && continue
+  short_remote="${remote_ref#refs/heads/}"
+  if echo "$short_remote" | grep -qE "^($PROTECTED)$"; then
+    VIOLATIONS+=("$short_remote")
+  fi
+done
+
+if [ "${#VIOLATIONS[@]}" -gt 0 ]; then
+  echo ""
+  echo -e "${RED}BLOCKED${NC} direct push to protected branch: ${VIOLATIONS[*]}"
+  echo ""
+  echo "SoluteLabs policy: changes to main/master/release/prod ship via PR."
+  echo "  1. git checkout -b feature/<name>"
+  echo "  2. git push -u origin feature/<name>"
+  echo "  3. gh pr create"
+  echo ""
+  echo "Documented emergency override (auditable):"
+  echo "  GIT_PUSH_TO_MAIN=1 git push <remote> <branch>"
+  exit 1
+fi
+
+exit 0

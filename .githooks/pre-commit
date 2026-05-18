@@ -1,0 +1,154 @@
+#!/bin/bash
+#
+# Pre-commit hook: blocks commits containing secrets, credentials,
+# sensitive files, or custom blocked terms.
+#
+# REUSABLE — copy into any project's .githooks/ directory.
+#
+# Configuration:
+#   Create a .hook-config file in your repo root to add project-specific
+#   blocked terms (one regex pattern per line). Example:
+#
+#     # .hook-config
+#     Acme\s*Corp
+#     internal-project-codename
+#     client-secret-name
+#
+#   Lines starting with # are ignored.
+
+set -euo pipefail
+
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+# Read staged paths NUL-delimited so filenames with spaces, tabs, or newlines
+# are preserved verbatim. The previous `for file in $(git diff ...)` form
+# word-split paths like "src dir/leak.js" into separate fragments and silently
+# skipped them, defeating the scan.
+STAGED_FILES=()
+while IFS= read -r -d '' f; do
+  STAGED_FILES+=("$f")
+done < <(git diff --cached --name-only -z --diff-filter=ACM)
+
+if [ "${#STAGED_FILES[@]}" -eq 0 ]; then
+  exit 0
+fi
+
+# Load optional .hook-config-skip: one regex per line (matched against path).
+# Use sparingly — every entry weakens protection. Reserve for files that
+# legitimately contain example/fixture credentials (test fixtures, docs).
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+SKIP_PATTERN=""
+if [ -f "$REPO_ROOT/.hook-config-skip" ]; then
+  SKIP_PATTERN=$(grep -vE '^\s*(#|$)' "$REPO_ROOT/.hook-config-skip" | paste -sd'|' - 2>/dev/null || true)
+fi
+should_skip_content_scan() {
+  [ -z "$SKIP_PATTERN" ] && return 1
+  echo "$1" | grep -qE "$SKIP_PATTERN"
+}
+
+FOUND_ISSUES=0
+
+# ---------------------------------------------------------------------------
+# 1. Sensitive file patterns (by filename)
+# ---------------------------------------------------------------------------
+SENSITIVE_FILE_PATTERNS='\.env($|\.)|^credentials|credentials\.|\.key$|\.pem$|\.p12$|\.pfx$|\.jks$|\.keystore$'
+
+for file in "${STAGED_FILES[@]}"; do
+  # Match against basename so sensitive names are caught at any depth.
+  base="${file##*/}"
+  if echo "$base" | grep -qiE "$SENSITIVE_FILE_PATTERNS"; then
+    echo -e "${RED}BLOCKED${NC} Sensitive file staged: ${file}"
+    FOUND_ISSUES=1
+  fi
+done
+
+# ---------------------------------------------------------------------------
+# 2. Scan staged content for secrets and credentials
+# ---------------------------------------------------------------------------
+for file in "${STAGED_FILES[@]}"; do
+  [ ! -f "$file" ] && continue
+  if should_skip_content_scan "$file"; then continue; fi
+  STAGED_CONTENT=$(git show ":$file" 2>/dev/null) || continue
+
+  # AWS access keys
+  MATCHES=$(echo "$STAGED_CONTENT" | grep -nE 'AKIA[0-9A-Z]{16}' 2>/dev/null || true)
+  if [ -n "$MATCHES" ]; then
+    echo -e "${RED}BLOCKED${NC} Possible AWS key in ${file}:"
+    echo "$MATCHES" | head -3
+    FOUND_ISSUES=1
+  fi
+
+  # API keys, tokens, passwords, secrets
+  # NOTE: use POSIX [[:space:]] (not \s) so this works on macOS BSD grep too.
+  MATCHES=$(echo "$STAGED_CONTENT" | grep -niE '(api[_-]?key|apikey|api[_-]?secret|token|secret|password|passwd|pwd)[[:space:]]*[:=][[:space:]]*["'"'"'][^[:space:]"'"'"']{8,}["'"'"']' 2>/dev/null || true)
+  if [ -n "$MATCHES" ]; then
+    echo -e "${RED}BLOCKED${NC} Possible secret/credential in ${file}:"
+    echo "$MATCHES" | head -3
+    FOUND_ISSUES=1
+  fi
+
+  # Private keys (use -e so the leading ----- is not parsed as a flag)
+  MATCHES=$(echo "$STAGED_CONTENT" | grep -nE -e '-----BEGIN[[:space:]]+(RSA[[:space:]]+|EC[[:space:]]+|DSA[[:space:]]+|OPENSSH[[:space:]]+)?PRIVATE[[:space:]]+KEY-----' 2>/dev/null || true)
+  if [ -n "$MATCHES" ]; then
+    echo -e "${RED}BLOCKED${NC} Private key found in ${file}:"
+    echo "$MATCHES" | head -3
+    FOUND_ISSUES=1
+  fi
+
+  # AWS credential environment variables
+  MATCHES=$(echo "$STAGED_CONTENT" | grep -niE '(AWS_SECRET_ACCESS_KEY|AWS_ACCESS_KEY_ID)[[:space:]]*[:=][[:space:]]*["'"'"'][^[:space:]"'"'"']+["'"'"']' 2>/dev/null || true)
+  if [ -n "$MATCHES" ]; then
+    echo -e "${RED}BLOCKED${NC} AWS credential in ${file}:"
+    echo "$MATCHES" | head -3
+    FOUND_ISSUES=1
+  fi
+
+  # GCP / Firebase / Stripe / GitHub tokens
+  MATCHES=$(echo "$STAGED_CONTENT" | grep -nE '(AIza[0-9A-Za-z_-]{35}|ghp_[0-9a-zA-Z]{36}|gho_[0-9a-zA-Z]{36}|sk_live_[0-9a-zA-Z]{24,}|rk_live_[0-9a-zA-Z]{24,})' 2>/dev/null || true)
+  if [ -n "$MATCHES" ]; then
+    echo -e "${RED}BLOCKED${NC} Possible API token in ${file}:"
+    echo "$MATCHES" | head -3
+    FOUND_ISSUES=1
+  fi
+done
+
+# ---------------------------------------------------------------------------
+# 3. Custom blocked terms from .hook-config (project-specific)
+# ---------------------------------------------------------------------------
+HOOK_CONFIG="$(git rev-parse --show-toplevel)/.hook-config"
+
+if [ -f "$HOOK_CONFIG" ]; then
+  # Read non-empty, non-comment lines into a combined pattern
+  CUSTOM_PATTERNS=$(grep -vE '^\s*(#|$)' "$HOOK_CONFIG" | paste -sd'|' - 2>/dev/null || true)
+
+  if [ -n "$CUSTOM_PATTERNS" ]; then
+    for file in "${STAGED_FILES[@]}"; do
+      [ ! -f "$file" ] && continue
+      if should_skip_content_scan "$file"; then continue; fi
+      # Skip the config file itself — it defines the patterns
+      [ "$file" = ".hook-config" ] && continue
+      STAGED_CONTENT=$(git show ":$file" 2>/dev/null) || continue
+
+      MATCHES=$(echo "$STAGED_CONTENT" | grep -niE "$CUSTOM_PATTERNS" 2>/dev/null || true)
+      if [ -n "$MATCHES" ]; then
+        echo -e "${RED}BLOCKED${NC} Custom blocked term found in ${file}:"
+        echo "$MATCHES" | head -3
+        FOUND_ISSUES=1
+      fi
+    done
+  fi
+fi
+
+# ---------------------------------------------------------------------------
+# Result
+# ---------------------------------------------------------------------------
+if [ "$FOUND_ISSUES" -ne 0 ]; then
+  echo ""
+  echo -e "${RED}Commit blocked.${NC} Fix the issues above before committing."
+  exit 1
+fi
+
+echo -e "${YELLOW}Security review:${NC} Ensure no sensitive information is included in this commit."
+exit 0
