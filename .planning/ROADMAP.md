@@ -29,14 +29,28 @@
 **Plans:** 8 plans
 
 Plans:
+
+**Wave 1** *(no dependencies — start here)*
 - [ ] 01-01-PLAN.md — Project scaffold, pnpm setup, all Phase 1 dependencies, Vitest config, .env.local template
+
+**Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 01-02-PLAN.md — SSRF validator (src/lib/ssrf.ts) with 9 unit tests (TDD, RED→GREEN→REFACTOR)
 - [ ] 01-03-PLAN.md — Prisma schema (Job/Result/Issue/CausalEdge), prisma.config.ts, lib singletons (prisma.ts, qstash.ts, redis.ts), shared types
+
+**Wave 3** *(blocked on Wave 2 completion — schema must exist before push)*
 - [ ] 01-04-PLAN.md — [BLOCKING] Prisma generate + pnpm db:push — apply schema to Neon
+
+**Wave 4** *(blocked on Wave 3 completion — generated client must exist)*
 - [ ] 01-05-PLAN.md — API routes: POST /api/analyze + GET /api/jobs/[jobId] + GET /api/results/[jobId] + route unit tests
 - [ ] 01-06-PLAN.md — Vercel Edge Middleware with dual rate limiters (5/hour + 20/day per IP, Upstash Redis)
+
+**Wave 5** *(blocked on Wave 4 completion — API routes must exist before UI wires to them)*
 - [ ] 01-07-PLAN.md — UI: AnalyzeForm + JobStatusBadge + (dashboard)/page.tsx — walking skeleton complete
+
+**Wave 6** *(blocked on Wave 5 completion)*
 - [ ] 01-08-PLAN.md — End-to-end smoke test + human verification checkpoint
+
+**Cross-cutting constraints:** `src/lib/ssrf.ts` used by POST /api/analyze (01-02 → 01-05); `src/generated/prisma` must exist before any API route compiles (01-04 → 01-05, 01-06, 01-07); `"use client"` required on AnalyzeForm and JobStatusBadge
 
 ### Phase 2: Crawler Service
 **Goal**: A Railway-hosted Playwright container crawls submitted URLs in both mobile and desktop viewports, executes JavaScript for SPA hydration, and writes typed signal payloads (DOM, CSS, JS, network) to the database
