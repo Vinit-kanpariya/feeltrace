@@ -26,7 +26,17 @@
   3. An IP that submits more than the configured rate limit receives a 429 response; subsequent requests are blocked without queuing a job
   4. Completed analysis results (issues, narrative, causal edges) are readable from the database; raw signal payloads are absent from persistent storage
   5. The job-status polling endpoint returns the correct state at each transition throughout the full job lifecycle
-**Plans**: TBD
+**Plans:** 8 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Project scaffold, pnpm setup, all Phase 1 dependencies, Vitest config, .env.local template
+- [ ] 01-02-PLAN.md — SSRF validator (src/lib/ssrf.ts) with 9 unit tests (TDD, RED→GREEN→REFACTOR)
+- [ ] 01-03-PLAN.md — Prisma schema (Job/Result/Issue/CausalEdge), prisma.config.ts, lib singletons (prisma.ts, qstash.ts, redis.ts), shared types
+- [ ] 01-04-PLAN.md — [BLOCKING] Prisma generate + pnpm db:push — apply schema to Neon
+- [ ] 01-05-PLAN.md — API routes: POST /api/analyze + GET /api/jobs/[jobId] + GET /api/results/[jobId] + route unit tests
+- [ ] 01-06-PLAN.md — Vercel Edge Middleware with dual rate limiters (5/hour + 20/day per IP, Upstash Redis)
+- [ ] 01-07-PLAN.md — UI: AnalyzeForm + JobStatusBadge + (dashboard)/page.tsx — walking skeleton complete
+- [ ] 01-08-PLAN.md — End-to-end smoke test + human verification checkpoint
 
 ### Phase 2: Crawler Service
 **Goal**: A Railway-hosted Playwright container crawls submitted URLs in both mobile and desktop viewports, executes JavaScript for SPA hydration, and writes typed signal payloads (DOM, CSS, JS, network) to the database
@@ -72,7 +82,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Data Foundation & Security Baseline | 0/0 | Not started | - |
+| 1. Data Foundation & Security Baseline | 0/8 | Planning complete | - |
 | 2. Crawler Service | 0/0 | Not started | - |
 | 3. AI Pipeline | 0/0 | Not started | - |
 | 4. Results Dashboard | 0/0 | Not started | - |
