@@ -200,13 +200,13 @@ const analysis = result.parsed_output!;
 
 ```bash
 # AI pipeline
-sfw pnpm add @anthropic-ai/sdk zod
+sfw npm install @anthropic-ai/sdk zod
 
 # Database
-sfw pnpm add @prisma/adapter-neon @neondatabase/serverless @vercel/functions
+sfw npm install @prisma/adapter-neon @neondatabase/serverless @vercel/functions
 
 # Dev
-sfw pnpm add -D prisma
+sfw npm install --save-dev prisma
 ```
 
 ### Lambda crawl function (separate deployment package)

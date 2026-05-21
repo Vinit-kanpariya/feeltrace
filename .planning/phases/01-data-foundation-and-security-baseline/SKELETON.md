@@ -24,11 +24,11 @@ A user pastes a URL into the input form, a job is created in the PostgreSQL data
 
 ## Stack Touched in Phase 1
 
-- [x] Project scaffold (Next.js 15, TypeScript, Tailwind 4, pnpm, Vitest 4.1.7, ESLint)
+- [x] Project scaffold (Next.js 15, TypeScript, Tailwind 4, npm, Vitest 4.1.7, ESLint)
 - [x] Routing — `src/app/(dashboard)/page.tsx` (main URL input page), `src/app/api/analyze/route.ts`, `src/app/api/jobs/[jobId]/route.ts`, `src/app/api/results/[jobId]/route.ts`
 - [x] Database — Prisma schema pushed to Neon; `POST /api/analyze` writes a Job record; `GET /api/jobs/[jobId]` reads it
 - [x] UI — `AnalyzeForm` (submit URL) + `JobStatusBadge` (polls `/api/jobs/[jobId]`) wired into the main page
-- [x] Deployment — local full-stack: `pnpm dev` starts Next.js on :3000; `pnpm test --run` runs SSRF unit tests; `pnpm db:push` applies schema to Neon
+- [x] Deployment — local full-stack: `npm run dev` starts Next.js on :3000; `npm run test:run` runs SSRF unit tests; `npm run db:push` applies schema to Neon
 
 ## Out of Scope (Deferred to Later Slices)
 

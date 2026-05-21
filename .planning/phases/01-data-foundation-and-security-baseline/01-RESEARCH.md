@@ -129,7 +129,7 @@ The walking skeleton deliverable is: user submits URL → `POST /api/analyze` cr
 
 | Library | Version | Purpose | Why Standard |
 |---------|---------|---------|--------------|
-| vitest | 4.1.7 | Test runner | Project mandate (CLAUDE.md: `pnpm test` runs vitest) |
+| vitest | 4.1.7 | Test runner | Project mandate (CLAUDE.md: `npm test` runs vitest) |
 | @vitejs/plugin-react | — | React support in Vitest | Required for component tests |
 | vite-tsconfig-paths | — | TypeScript path aliases in Vitest | Required for `@/` path imports |
 
@@ -156,8 +156,8 @@ The walking skeleton deliverable is: user submits URL → `POST /api/analyze` cr
 
 ```bash
 # Next.js app — run from project root
-sfw pnpm add @prisma/adapter-neon @neondatabase/serverless @upstash/qstash @upstash/ratelimit @upstash/redis zod
-sfw pnpm add -D prisma vitest @vitejs/plugin-react vite-tsconfig-paths @testing-library/react @testing-library/dom
+sfw npm install @prisma/adapter-neon @neondatabase/serverless @upstash/qstash @upstash/ratelimit @upstash/redis zod
+sfw npm install --save-dev prisma vitest @vitejs/plugin-react vite-tsconfig-paths @testing-library/react @testing-library/dom
 ```
 
 > CLAUDE.md requires `sfw` prefix on all package install commands.
@@ -1074,14 +1074,14 @@ export async function GET(
 |------------|------------|-----------|---------|----------|
 | Node.js | Next.js, Prisma CLI, Vitest | Yes | v22.19.0 | — |
 | npm | Package installation | Yes | 11.11.0 | — |
-| pnpm | `pnpm dev`, `pnpm test` (CLAUDE.md) | No | — | Install via `npm install -g pnpm` |
+| npm | `npm run dev`, `npm test` (CLAUDE.md) | Yes | 11.11.0 | — |
 | Neon PostgreSQL | DB schema, API routes | Not provisioned | — | Create project at neon.com (free tier) |
 | Upstash QStash | Job queue | Not provisioned | — | Create at console.upstash.com → QStash tab (free tier: 500 deliveries/day) |
 | Upstash Redis | Rate limiting | Not provisioned | — | Create at console.upstash.com → Redis tab (separate database, free tier) |
 | Railway | Crawler callback target (stub) | Not provisioned | — | Create project at railway.app; deploy minimal Express stub |
 
 **Missing dependencies with no fallback:**
-- pnpm: CLAUDE.md mandates `pnpm dev`, `pnpm test`. Must be installed before any work starts.
+- None (npm is already available).
 
 **Missing dependencies with fallback:**
 - Neon, Upstash QStash, Upstash Redis, Railway: All are external services that must be provisioned. Free tier accounts are sufficient for MVP. No fallback — they are required for any functionality.
@@ -1096,30 +1096,30 @@ export async function GET(
 |----------|-------|
 | Framework | Vitest 4.1.7 |
 | Config file | `vitest.config.mts` (Wave 0 — does not exist yet) |
-| Quick run command | `pnpm test --run` |
-| Full suite command | `pnpm test` |
+| Quick run command | `npm run test:run` |
+| Full suite command | `npm test` |
 
 ### Phase Requirements → Test Map
 
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
-| INFRA-01 | SSRF validator blocks RFC-1918, loopback, link-local, non-http schemes | unit | `pnpm test --run src/lib/ssrf.test.ts` | Wave 0 |
-| INFRA-01 | SSRF validator passes valid public URLs | unit | `pnpm test --run src/lib/ssrf.test.ts` | Wave 0 |
+| INFRA-01 | SSRF validator blocks RFC-1918, loopback, link-local, non-http schemes | unit | `npm run test:run src/lib/ssrf.test.ts` | Wave 0 |
+| INFRA-01 | SSRF validator passes valid public URLs | unit | `npm run test:run src/lib/ssrf.test.ts` | Wave 0 |
 | INFRA-02 | Rate limiter returns 429 after limit exceeded | integration (manual) | Manual — requires live Upstash Redis connection | N/A |
-| INFRA-03 | Job record persisted without raw signal payload | integration (manual) | Manual — DB inspection via `pnpm db:studio` | N/A |
+| INFRA-03 | Job record persisted without raw signal payload | integration (manual) | Manual — DB inspection via `npm run db:studio` | N/A |
 | INFRA-04 | Polling endpoint returns correct status per transition | manual | Manual — submit job, observe status badge transitions | N/A |
-| CRAWL-01 | POST /api/analyze returns 202 + jobId for valid URL | unit | `pnpm test --run src/app/api/analyze/route.test.ts` | Wave 0 |
-| CRAWL-01 | POST /api/analyze returns 422 for SSRF URL | unit | `pnpm test --run src/app/api/analyze/route.test.ts` | Wave 0 |
+| CRAWL-01 | POST /api/analyze returns 202 + jobId for valid URL | unit | `npm run test:run src/app/api/analyze/route.test.ts` | Wave 0 |
+| CRAWL-01 | POST /api/analyze returns 422 for SSRF URL | unit | `npm run test:run src/app/api/analyze/route.test.ts` | Wave 0 |
 
 ### Sampling Rate
 
-- **Per task commit:** `pnpm test --run src/lib/ssrf.test.ts`
-- **Per wave merge:** `pnpm test --run`
+- **Per task commit:** `npm run test:run src/lib/ssrf.test.ts`
+- **Per wave merge:** `npm run test:run`
 - **Phase gate:** Full suite green before `/gsd:verify-work`
 
 ### Wave 0 Gaps
 
-- [ ] `vitest.config.mts` — Vitest configuration file; install: `sfw pnpm add -D vitest @vitejs/plugin-react vite-tsconfig-paths`
+- [ ] `vitest.config.mts` — Vitest configuration file; install: `sfw npm install --save-dev vitest @vitejs/plugin-react vite-tsconfig-paths`
 - [ ] `src/lib/ssrf.test.ts` — SSRF validator unit tests (covers INFRA-01 all cases per D-16)
 - [ ] `src/app/api/analyze/route.test.ts` — API route unit tests for POST /api/analyze (mocks Prisma + QStash + dns)
 
@@ -1159,7 +1159,7 @@ export async function GET(
 | App Router only | All pages under `src/app/`; no `pages/` directory |
 | Server Components by default | Add `"use client"` only for interactive/polling components |
 | Prisma for all DB access | Never raw SQL in API routes or application code |
-| `sfw` prefix on all package installs | `sfw pnpm add ...` — never bare `pnpm add` |
+| `sfw` prefix on all package installs | `sfw npm install ...` — never bare `npm install` |
 | Experience score is float 0.0–10.0 | Not applicable to Phase 1 tables (score lives in `Result.narrative` JSON) |
 | snake_case event names in tracker | Not applicable to Phase 1 (tracker is separate build in `tracker/`) |
 | NEVER modify `tracker/dist/` | Not in scope for Phase 1 |

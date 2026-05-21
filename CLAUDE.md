@@ -56,22 +56,22 @@ feeltrace/
 ## Commands
 ```bash
 # Development
-pnpm dev              # Start Next.js dev server on :3000
-pnpm dev:tracker      # Watch-build the tracker snippet
+npm run dev              # Start Next.js dev server on :3000
+npm run dev:tracker      # Watch-build the tracker snippet
 
 # Database
-pnpm db:push          # Push Prisma schema to DB (dev only)
-pnpm db:migrate       # Run migrations (production-safe)
-pnpm db:studio        # Open Prisma Studio
+npm run db:push          # Push Prisma schema to DB (dev only)
+npm run db:migrate       # Run migrations (production-safe)
+npm run db:studio        # Open Prisma Studio
 
 # Quality
-pnpm lint             # ESLint
-pnpm typecheck        # tsc --noEmit
-pnpm test             # Vitest unit tests
+npm run lint             # ESLint
+npm run typecheck        # tsc --noEmit
+npm test                 # Vitest unit tests
 
 # Build
-pnpm build            # Next.js production build
-pnpm build:tracker    # Production build of tracker snippet
+npm run build            # Next.js production build
+npm run build:tracker    # Production build of tracker snippet
 ```
 
 ## Boundaries
@@ -114,7 +114,6 @@ ALWAYS prefix package install commands with `sfw` (Socket Firewall):
 - `sfw npm install` instead of `npm install`
 - `sfw pip install` instead of `pip install`
 - `sfw yarn add` instead of `yarn add`
-- `sfw pnpm add` instead of `pnpm add`
 
 This blocks malicious packages before they enter the codebase.
-NEVER run bare npm/pip/yarn/pnpm install without the `sfw` prefix.
+NEVER run bare npm/pip/yarn install without the `sfw` prefix.
