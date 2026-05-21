@@ -1,0 +1,73 @@
+// prisma/schema.prisma
+// Source: .planning/phases/01-data-foundation-and-security-baseline/01-RESEARCH.md Pattern 2
+// Decisions: D-17 (schema), D-18 (status enum), D-19 (no TTL)
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // No url field in Prisma 7 — configured in prisma.config.ts (DIRECT_URL for migrations)
+  // Runtime connection uses PrismaNeon adapter with DATABASE_URL (pooler) in src/lib/prisma.ts
+}
+
+enum JobStatus {
+  pending
+  crawling
+  extracting
+  analyzing
+  complete
+  failed
+}
+
+model Job {
+  id            String    @id @default(cuid())
+  url           String
+  status        JobStatus @default(pending)
+  error_message String?
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  result        Result?
+
+  @@index([status])
+  @@index([created_at])
+}
+
+model Result {
+  id         String       @id @default(cuid())
+  jobId      String       @unique
+  job        Job          @relation(fields: [jobId], references: [id])
+  narrative  Json
+  issues     Issue[]
+  edges      CausalEdge[]
+  created_at DateTime     @default(now())
+}
+
+model Issue {
+  id                    String       @id @default(cuid())
+  resultId              String
+  result                Result       @relation(fields: [resultId], references: [id])
+  category              String
+  signal_source         String
+  severity              Int
+  raw_evidence          String
+  technical_description String
+  causedBy              CausalEdge[] @relation("ToIssue")
+  causes                CausalEdge[] @relation("FromIssue")
+}
+
+model CausalEdge {
+  id           String @id @default(cuid())
+  resultId     String
+  result       Result @relation(fields: [resultId], references: [id])
+  fromIssueId  String
+  fromIssue    Issue  @relation("FromIssue", fields: [fromIssueId], references: [id])
+  toIssueId    String
+  toIssue      Issue  @relation("ToIssue", fields: [toIssueId], references: [id])
+  relationship String
+  confidence   String
+  mechanism    String // NON-NULLABLE — schema-level enforcement (D-17); Prisma rejects any create without this field
+  explanation  String
+}
