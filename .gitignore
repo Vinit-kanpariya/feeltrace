@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Claude Code working directory (worktrees, temp scaffolds, settings)
+.claude/
+
+# Prisma generated client (re-generated via prisma generate)
+src/generated/
