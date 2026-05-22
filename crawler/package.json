@@ -1,0 +1,25 @@
+{
+  "name": "feeltrace-crawler",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/index.ts",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "playwright-core": "1.60.0",
+    "hono": "4.12.21",
+    "@upstash/qstash": "2.11.0",
+    "@prisma/client": "7.8.0",
+    "p-queue": "9.3.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "prisma": "7.8.0",
+    "typescript": "6.0.3",
+    "@types/node": "22.x"
+  }
+}
