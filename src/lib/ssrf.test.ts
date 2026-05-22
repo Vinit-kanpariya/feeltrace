@@ -1,6 +1,6 @@
 // src/lib/ssrf.test.ts
 import { describe, it, expect, vi } from 'vitest'
-import { validateUrl, SsrfError } from './ssrf'
+import { validateUrl } from './ssrf'
 
 // Mock dns module — no real network calls in unit tests
 vi.mock('node:dns', () => ({
