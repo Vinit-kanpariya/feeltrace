@@ -33,8 +33,14 @@ export function AnalyzeForm() {
         const body = await res.text()
         setError(body)
       } else if (res.status === 503) {
-        const body = await res.text()
-        setError(body || 'Service busy. Please try again shortly.')
+        const contentType = res.headers.get('content-type') ?? ''
+        if (contentType.includes('application/json')) {
+          const data: AnalyzeErrorResponse = await res.json()
+          setError(data.error || 'Service busy. Please try again shortly.')
+        } else {
+          const body = await res.text()
+          setError(body || 'Service busy. Please try again shortly.')
+        }
       } else {
         setError('An unexpected error occurred')
       }
