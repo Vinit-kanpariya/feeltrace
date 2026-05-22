@@ -60,10 +60,30 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. Submitting a React or Next.js SPA URL produces signal data that reflects the hydrated DOM — not the pre-JS HTML shell
   2. Each analysis job produces two signal sets: one captured at 375 px mobile viewport with network throttling, and one at 1440 px desktop viewport
-  3. The database contains populated DOM signal records (layout depth, element counts, ARIA attributes, semantic markup quality, form structure, CTA visibility) for a completed job
-  4. The database contains populated CSS, JS loading-behavior, and network/HAR signal records (animation count, paint-trigger properties, bundle sizes, async/deferred classification, request waterfall, render-blocking assets) for the same completed job
+  3. Crawler logs confirm populated DOM signal payloads (layout depth, element counts, ARIA attributes, semantic markup quality, form structure, CTA visibility) for both mobile and desktop passes — signals are in-memory per INFRA-03, not written to DB
+  4. Crawler logs confirm populated CSS, JS loading-behavior, and network/HAR signal payloads (animation count, paint-trigger properties, bundle sizes, async/deferred classification, request waterfall, render-blocking assets) for both passes — signals passed to Phase 3 pipeline, not persisted raw
   5. The crawler completes and writes signals within the 60-second window defined by the job SLA
-**Plans**: TBD
+**Plans:** 6 plans
+
+Plans:
+
+**Wave 1** *(no dependencies — start here)*
+- [ ] 02-01-PLAN.md — crawler/ sub-project scaffold: package.json, tsconfig, Dockerfile, railway.toml, signal type contracts, Prisma client singleton
+
+**Wave 2** *(blocked on Wave 1 completion — scaffold must exist)*
+- [ ] 02-02-PLAN.md — Hono server with /health + /crawl routes, QStash signature verification (raw body), p-queue singleton (concurrency: 1), server entry point
+
+**Wave 3** *(blocked on Wave 1 completion — parallel: 02-03 and 02-04 run simultaneously)*
+- [ ] 02-03-PLAN.md — Playwright browser lifecycle: dual viewport crawl, SPA hydration wait (domcontentloaded + waitForFunction), SSRF Layer 2, DOM extractor (SIG-01) + unit tests, CSS extractor (SIG-02)
+- [ ] 02-04-PLAN.md — JS signal extractor (SIG-03) + unit tests, Network/HAR extractor (SIG-04) + unit tests, fixture HAR file
+
+**Wave 4** *(blocked on Wave 2 + Wave 3 completion — all extractors must exist before wiring)*
+- [ ] 02-05-PLAN.md — Job processor: status transitions (pending→crawling→extracting→analyzing→complete), 55s SLA timeout, idempotency check, all four extractors wired
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 02-06-PLAN.md — [HUMAN CHECKPOINT] Railway deployment, env var setup, end-to-end verification with a Next.js SPA URL
+
+**Cross-cutting constraints:** `crawler/src/lib/types.ts` (02-01) is the canonical signal type source — all extractors import from it; CSS/JS coverage must stop before `context.close()` and HAR must be read after `context.close()` (Pitfall 4); 02-03 and 02-04 run in parallel (Wave 3) — no file overlap
 
 ### Phase 3: AI Pipeline
 **Goal**: The three-stage AI pipeline converts raw signals into a scored issue list, a mechanism-grounded causality graph, and a plain-English narrative distinguishing perceived from technical performance
@@ -97,6 +117,6 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Data Foundation & Security Baseline | 0/8 | Planning complete | - |
-| 2. Crawler Service | 0/0 | Not started | - |
+| 2. Crawler Service | 0/6 | Planning complete | - |
 | 3. AI Pipeline | 0/0 | Not started | - |
 | 4. Results Dashboard | 0/0 | Not started | - |
