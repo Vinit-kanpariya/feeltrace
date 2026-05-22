@@ -5,14 +5,20 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+// Shared mock verify function — must be defined outside the factory
+// so we can access it from tests via getMockVerify()
+const mockVerify = vi.fn()
+
 // Mock @upstash/qstash Receiver before importing server
 vi.mock('@upstash/qstash', () => {
-  const mockVerify = vi.fn()
+  class MockReceiver {
+    verify: typeof mockVerify
+    constructor() {
+      this.verify = mockVerify
+    }
+  }
   return {
-    Receiver: vi.fn().mockImplementation(() => ({
-      verify: mockVerify,
-    })),
-    __mockVerify: mockVerify,
+    Receiver: MockReceiver,
   }
 })
 
@@ -39,10 +45,8 @@ async function getApp() {
   return app
 }
 
-async function getMockVerify() {
-  const qstash = await import('@upstash/qstash')
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (qstash as any).__mockVerify as ReturnType<typeof vi.fn>
+function getMockVerify() {
+  return mockVerify
 }
 
 describe('GET /health', () => {
@@ -57,9 +61,8 @@ describe('GET /health', () => {
 })
 
 describe('POST /crawl', () => {
-  beforeEach(async () => {
-    const mockVerify = await getMockVerify()
-    mockVerify.mockReset()
+  beforeEach(() => {
+    getMockVerify().mockReset()
   })
 
   it('returns 401 when Upstash-Signature header is missing', async () => {
@@ -76,8 +79,7 @@ describe('POST /crawl', () => {
   })
 
   it('returns 401 when signature is invalid', async () => {
-    const mockVerify = await getMockVerify()
-    mockVerify.mockRejectedValueOnce(new Error('Invalid signature'))
+    getMockVerify().mockRejectedValueOnce(new Error('Invalid signature'))
 
     const server = await getApp()
     const req = new Request('http://localhost/crawl', {
@@ -95,8 +97,7 @@ describe('POST /crawl', () => {
   })
 
   it('returns 400 when payload is missing jobId', async () => {
-    const mockVerify = await getMockVerify()
-    mockVerify.mockResolvedValueOnce(true)
+    getMockVerify().mockResolvedValueOnce(true)
 
     const server = await getApp()
     const req = new Request('http://localhost/crawl', {
@@ -114,8 +115,7 @@ describe('POST /crawl', () => {
   })
 
   it('returns 400 when payload has malformed url', async () => {
-    const mockVerify = await getMockVerify()
-    mockVerify.mockResolvedValueOnce(true)
+    getMockVerify().mockResolvedValueOnce(true)
 
     const server = await getApp()
     const req = new Request('http://localhost/crawl', {
@@ -133,8 +133,7 @@ describe('POST /crawl', () => {
   })
 
   it('returns 200 with { received: true } for valid signature and payload', async () => {
-    const mockVerify = await getMockVerify()
-    mockVerify.mockResolvedValueOnce(true)
+    getMockVerify().mockResolvedValueOnce(true)
 
     const server = await getApp()
     const req = new Request('http://localhost/crawl', {
@@ -152,8 +151,7 @@ describe('POST /crawl', () => {
   })
 
   it('verifies signature using raw body string (not parsed JSON)', async () => {
-    const mockVerify = await getMockVerify()
-    mockVerify.mockResolvedValueOnce(true)
+    getMockVerify().mockResolvedValueOnce(true)
 
     const server = await getApp()
     const rawBody = JSON.stringify({ jobId: 'test-job-456', url: 'https://example.com' })
