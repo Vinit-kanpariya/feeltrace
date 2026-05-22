@@ -16,6 +16,7 @@ vi.mock('node:dns', () => ({
 
 import dns from 'node:dns'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockLookup = vi.mocked(dns.promises.lookup as any)
 
 describe('validateUrl', () => {
