@@ -8,5 +8,6 @@ export default defineConfig({
   plugins: [tsconfigPaths(), react()],
   test: {
     environment: 'jsdom',
+    include: ['src/**/*.test.ts', 'crawler/src/**/*.test.ts'],
   },
 })
