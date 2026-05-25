@@ -1,7 +1,9 @@
 import { chromium, Browser, BrowserContext, Page } from 'playwright-core'
-import { CrawlPass, JSSignals, NetworkSignals } from './lib/types'
+import { CrawlPass } from './lib/types'
 import { extractDOMSignals } from './extractors/dom'
 import { extractCSSSignals } from './extractors/css'
+import { extractJSSignals } from './extractors/js'
+import { extractNetworkSignals } from './extractors/network'
 
 export function isPrivateHost(hostname: string): boolean {
   if (hostname === 'localhost' || hostname === '::1') return true
@@ -63,7 +65,8 @@ async function crawlWithViewport(
   options: ViewportOptions,
   jobId?: string
 ): Promise<CrawlPass> {
-  const harPath = `/tmp/feeltrace-${jobId ?? Date.now()}-${options.viewport}.har`
+  // Unique path per pass so parallel passes don't race on the same file
+  const harPath = `/tmp/feeltrace-${jobId ?? Date.now()}-${options.isMobile ? 'mobile' : 'desktop'}.har`
 
   const context: BrowserContext = await browser.newContext({
     viewport: { width: options.width, height: options.height },
@@ -107,18 +110,18 @@ async function crawlWithViewport(
 
   const domSignals = await extractDOMSignals(page)
   const cssSignals = await extractCSSSignals(page) // internally calls stopCSSCoverage
+  const jsSignals = await extractJSSignals(page)  // internally calls stopJSCoverage
 
-  await page.coverage.stopJSCoverage() // must be called before context.close()
+  await context.close() // flushes HAR to disk (must happen after coverage stops)
 
-  await context.close() // flushes HAR to harPath
+  const networkSignals = await extractNetworkSignals(harPath) // reads flushed HAR
 
   return {
     viewport: options.viewport,
     domSignals,
     cssSignals,
-    // jsSignals and networkSignals are wired in 02-05 (extracted from harPath and coverage)
-    jsSignals: {} as JSSignals,
-    networkSignals: { entries: [] } as unknown as NetworkSignals,
+    jsSignals,
+    networkSignals,
   }
 }
 
