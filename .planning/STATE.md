@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: unknown
-last_updated: "2026-05-26T10:48:39.690Z"
+status: phase-complete
+last_updated: "2026-05-26T12:00:00.000Z"
 progress:
   total_phases: 4
   completed_phases: 3
@@ -31,17 +31,17 @@ progress:
 | Field | Value |
 |-------|-------|
 | Milestone | MVP |
-| Current Phase | 3 — AI Pipeline |
-| Phase Name | AI Pipeline |
-| Current Plan | 03-05 (Wave 4: wire processor.ts + end-to-end smoke test) |
-| Status | Phase 3 IN PROGRESS — 03-01, 03-02, 03-03, 03-04 complete, 1 plan remaining |
+| Current Phase | 4 — Results Dashboard |
+| Phase Name | Results Dashboard |
+| Current Plan | 04-01 (Wave 1: start here) |
+| Status | Phase 3 COMPLETE — all 5 plans done; Phase 4 ready to begin |
 
-**Progress**: Phase 2 of 4 complete, Phase 3 in progress (4/5 plans done)
+**Progress**: Phase 3 of 4 complete, Phase 4 not yet started
 
 ```
-[Phase 1] ✓ → [Phase 2] ✓ → [Phase 3] → [Phase 4]
-                                  ^
-                               Current
+[Phase 1] ✓ → [Phase 2] ✓ → [Phase 3] ✓ → [Phase 4]
+                                                ^
+                                             Current
 ```
 
 ---
@@ -50,15 +50,15 @@ progress:
 
 | Metric | Value |
 |--------|-------|
-| Phases complete | 2 / 4 |
-| Plans complete | 18 / 19 (Phase 1 + Phase 2 + 03-01 + 03-02 + 03-03 + 03-04) |
+| Phases complete | 3 / 4 |
+| Plans complete | 19 / 19 (Phase 1 + Phase 2 + Phase 3 all complete) |
 | Unit tests | 89 passing (DOM: 11, JS: 9, Network: 7, Stage1: 20, Stage2: 7, Stage3: 14, server: 21) |
 
 | Phase 03-ai-pipeline P01 | 5min | 2 tasks | 2 files |
 | Phase 03-ai-pipeline P02 | 32min | 2 tasks | 3 files |
 | Phase 03-ai-pipeline P03 | 6min | 2 tasks | 3 files |
 | Phase 03-ai-pipeline P04 | 12min | 2 tasks | 3 files |
-| Phase 03-ai-pipeline P05 | 5 | 1 tasks | 1 files |
+| Phase 03-ai-pipeline P05 | ~2h | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -81,6 +81,8 @@ progress:
 | z.string().refine() over z.enum() cast for PERMITTED_MECHANISMS | readonly const tuple not castable to [string, ...string[]] in TypeScript 6; refine() is semantically equivalent |
 | EMIT_ANALYSIS_TOOL typed as Tool with SchemaType.ARRAY literal cast | @google/generative-ai FunctionDeclaration requires literal SchemaType enum values, not general SchemaType |
 | NarrativeResult cast via unknown for Prisma Json type | Plain interfaces lack the string index signature InputJsonValue requires; double-cast is safe since NarrativeResult is fully serialisable |
+| Groq (llama-3.3-70b-versatile) replaces Gemini as LLM provider | Gemini free-tier quota exhausted across all models; Groq provides 14,400 RPD free with no billing required |
+| Causal edge indices must be remapped from scoredIssue space to enrichedIssue space | LLM returns indices into the scored array; DB write requires IDs of enriched issues (different array); remap via signalKey as stable cross-array identifier |
 
 ### Active Todos
 
@@ -105,19 +107,14 @@ None currently.
 
 ## Session Continuity
 
-**To resume work**: Run `/gsd:execute-phase 3` to continue Phase 3 from plan 03-05.
+**To resume work**: Run `/gsd:execute-phase 4` to begin Phase 4 — Results Dashboard.
 
 **Context for next session**:
 
-- Phase 3 has 5 plans across 4 waves — 03-01, 03-02, 03-03, 03-04 COMPLETE, 1 plan remaining
-- Wave 1: 03-01 COMPLETE (Gemini SDK installed, GEMINI_API_KEY confirmed in crawler/.env)
-- Wave 2: 03-02 COMPLETE (types.ts + stage1-scorer.ts with 20 passing tests — AI-01, AI-04 satisfied)
-- Wave 3: 03-03 COMPLETE (gemini.ts singleton + stage2-reasoner.ts with 7 passing tests — AI-02 satisfied)
-- Wave 3: 03-04 COMPLETE (stage3-narrator.ts with 14 passing tests, run-pipeline.ts orchestrator — AI-03, AI-04 satisfied)
-- Wave 4: 03-05 (wire into processor.ts + end-to-end smoke test with real URL)
-- Key pitfall: processor.ts TODO stub is at line 39; replace with `await runAIPipeline(jobId, _signals)`, import from `./pipeline/run-pipeline`
-- Key pitfall: Prisma 7 requires PrismaNeon adapter; postbuild must copy src/generated/prisma to dist/
+- Phase 3 COMPLETE — all 5 plans done; Result/Issue/CausalEdge records live in Neon DB
+- LLM provider is Groq (llama-3.3-70b-versatile via groq-sdk) — GROQ_API_KEY required in crawler/.env
+- GEMINI_API_KEY remains in crawler/.env but is no longer used (quota exhausted)
+- Smoke test record: Result id cmpmjx5xo0000rcjd0nxrvh5g (react.dev), 6 issues, 5 causal edges
 - Severity mapping: Critical=4, High=3, Medium=2, Low=1; Phase 4 orders by severity DESC
-- PERMITTED_MECHANISMS list (13 rules) defined in pipeline/types.ts — single source of truth for Stage 2 prompt + zod
-- stage2-reasoner.ts: z.string().refine() used for mechanism validation (not z.enum() — TypeScript 6 readonly cast issue)
-- run-pipeline.ts: NarrativeResult requires `as unknown as` double-cast for Prisma Json field type
+- PERMITTED_MECHANISMS list (13 rules) defined in pipeline/types.ts — single source of truth for Stage 2
+- Phase 4 has no defined plans yet — planner must generate them before execution

@@ -8,7 +8,7 @@
 
 - [ ] **Phase 1: Data Foundation & Security Baseline** - Job lifecycle, DB schema, SSRF protection, rate limiting, and status polling before any public URL is accepted
 - [ ] **Phase 2: Crawler Service** - Playwright on Railway extracts DOM, CSS, JS, and network signals from live SPA pages
-- [ ] **Phase 3: AI Pipeline** - Three-stage scoring → reasoning → narration pipeline converts raw signals into structured issues and plain-English output
+- [x] **Phase 3: AI Pipeline** - Three-stage scoring → reasoning → narration pipeline converts raw signals into structured issues and plain-English output
 - [ ] **Phase 4: Results Dashboard** - Full UI delivers ranked issue list, narrative summary, causality graph, and shareable links
 
 ---
@@ -100,17 +100,17 @@ Plans:
 Plans:
 
 **Wave 1** *(no dependencies — start here)*
-- [ ] 03-01-PLAN.md — [HUMAN CHECKPOINT] Provision ANTHROPIC_API_KEY + install @anthropic-ai/sdk in crawler/
+- [x] 03-01-PLAN.md — [HUMAN CHECKPOINT] Provision ANTHROPIC_API_KEY + install @anthropic-ai/sdk in crawler/
 
 **Wave 2** *(blocked on Wave 1 completion)*
-- [ ] 03-02-PLAN.md — Pipeline type contracts (types.ts) + Stage 1 deterministic scorer + unit tests (AI-01, AI-04)
+- [x] 03-02-PLAN.md — Pipeline type contracts (types.ts) + Stage 1 deterministic scorer + unit tests (AI-01, AI-04)
 
 **Wave 3** *(blocked on Wave 2 completion — types must exist; plans 03-03 and 03-04 run in parallel)*
-- [ ] 03-03-PLAN.md — Anthropic SDK singleton (lib/anthropic.ts) + Stage 2 LLM reasoner + zod validation tests (AI-02)
-- [ ] 03-04-PLAN.md — Stage 3 LLM narrator + parser tests + run-pipeline.ts orchestrator with DB transaction (AI-03, AI-04)
+- [x] 03-03-PLAN.md — Anthropic SDK singleton (lib/anthropic.ts) + Stage 2 LLM reasoner + zod validation tests (AI-02)
+- [x] 03-04-PLAN.md — Stage 3 LLM narrator + parser tests + run-pipeline.ts orchestrator with DB transaction (AI-03, AI-04)
 
 **Wave 4** *(blocked on Wave 3 completion — all pipeline files must exist before wiring)*
-- [ ] 03-05-PLAN.md — [HUMAN CHECKPOINT] Wire runAIPipeline into processor.ts + end-to-end smoke test
+- [x] 03-05-PLAN.md — [HUMAN CHECKPOINT] Wire runAIPipeline into processor.ts + end-to-end smoke test
 
 **Cross-cutting constraints:** `crawler/src/pipeline/types.ts` (03-02) is the canonical pipeline type source — all pipeline files import from it; 03-03 and 03-04 run in parallel (Wave 3) — no file overlap; ANTHROPIC_API_KEY must be set in crawler/.env before any Wave 3+ execution
 
@@ -133,7 +133,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Data Foundation & Security Baseline | 0/8 | Planning complete | - |
-| 2. Crawler Service | 0/6 | Planning complete | - |
-| 3. AI Pipeline | 3/5 | In progress | - |
+| 1. Data Foundation & Security Baseline | 8/8 | Complete | 2026-05-18 |
+| 2. Crawler Service | 6/6 | Complete | 2026-05-26 |
+| 3. AI Pipeline | 5/5 | Complete | 2026-05-26 |
 | 4. Results Dashboard | 0/0 | Not started | - |
