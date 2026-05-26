@@ -154,19 +154,16 @@ export async function runStage2Reasoning(
 ): Promise<{ enrichedIssues: EnrichedIssue[]; edges: CausalEdgeCandidate[] }> {
   console.log(`[pipeline] Stage 2: analyzing ${scoredIssues.length} scored issues`)
 
-  const model = client.getGenerativeModel(
-    {
-      model: 'gemini-1.5-flash',
-      tools: [EMIT_ANALYSIS_TOOL],
-      toolConfig: {
-        functionCallingConfig: {
-          mode: FunctionCallingMode.ANY,
-          allowedFunctionNames: ['emit_analysis'],
-        },
+  const model = client.getGenerativeModel({
+    model: 'gemini-2.0-flash-lite',
+    tools: [EMIT_ANALYSIS_TOOL],
+    toolConfig: {
+      functionCallingConfig: {
+        mode: FunctionCallingMode.ANY,
+        allowedFunctionNames: ['emit_analysis'],
       },
     },
-    { apiVersion: 'v1' },
-  )
+  })
 
   const result = await model.generateContent({
     systemInstruction: SYSTEM_PROMPT,
