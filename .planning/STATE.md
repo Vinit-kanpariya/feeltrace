@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: phase-complete
+status: in-progress
 last_updated: "2026-05-26T12:00:00.000Z"
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 19
+  total_plans: 26
   completed_plans: 19
-  percent: 100
+  percent: 73
 ---
 
 # FeelTrace — Project State
@@ -33,10 +33,10 @@ progress:
 | Milestone | MVP |
 | Current Phase | 4 — Results Dashboard |
 | Phase Name | Results Dashboard |
-| Current Plan | 04-01 (Wave 1: start here) |
-| Status | Phase 3 COMPLETE — all 5 plans done; Phase 4 ready to begin |
+| Current Plan | 04-01 (Wave 0: start here) |
+| Status | Phase 4 PLANNED — 7 plans in 6 waves; ready to execute |
 
-**Progress**: Phase 3 of 4 complete, Phase 4 not yet started
+**Progress**: Phase 3 of 4 complete, Phase 4 planned (0/7 plans executed)
 
 ```
 [Phase 1] ✓ → [Phase 2] ✓ → [Phase 3] ✓ → [Phase 4]
@@ -59,6 +59,18 @@ progress:
 | Phase 03-ai-pipeline P03 | 6min | 2 tasks | 3 files |
 | Phase 03-ai-pipeline P04 | 12min | 2 tasks | 3 files |
 | Phase 03-ai-pipeline P05 | ~2h | 2 tasks | 4 files |
+
+**Phase 4 Plan Summary (7 plans, 6 waves):**
+
+| Plan | Wave | Objective |
+|------|------|-----------|
+| 04-01 | 0 | Vitest config fix + 5 RED test stubs (Nyquist baseline) |
+| 04-02 | 1 | src/types/narrative.ts (D-01/D-02) + globals.css React Flow import (D-04) |
+| 04-03 | 1 | Install @xyflow/react + lucide-react, graph-utils.ts, JobStatusBadge rewrite (D-03) |
+| 04-04 | 2 | SeverityBadge + IssueCard + NarrativeSection + GraphAbsent (Server Components) |
+| 04-05 | 3 | CausalityGraph (React Flow, "use client") + ShareButton (clipboard, "use client") |
+| 04-06 | 4 | Results route assembly: page.tsx + loading.tsx + not-found.tsx |
+| 04-07 | 5 | Full test suite + browser smoke test (react.dev, 6 issues, 5 edges) |
 
 ## Accumulated Context
 

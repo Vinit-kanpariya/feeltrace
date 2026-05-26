@@ -158,4 +158,4 @@ Plans:
 | 1. Data Foundation & Security Baseline | 8/8 | Complete | 2026-05-18 |
 | 2. Crawler Service | 6/6 | Complete | 2026-05-26 |
 | 3. AI Pipeline | 5/5 | Complete | 2026-05-26 |
-| 4. Results Dashboard | 0/7 | Not started | - |
+| 4. Results Dashboard | 0/7 | Planned | - |

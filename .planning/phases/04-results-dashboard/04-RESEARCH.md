@@ -720,7 +720,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Tailwind v4 `@import` order with React Flow CSS**
    - What we know: Tailwind v4 uses `@import "tailwindcss"` and processes CSS via PostCSS. Adding `@import '@xyflow/react/dist/style.css'` after the Tailwind import should be safe.
