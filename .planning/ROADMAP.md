@@ -135,5 +135,5 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Data Foundation & Security Baseline | 0/8 | Planning complete | - |
 | 2. Crawler Service | 0/6 | Planning complete | - |
-| 3. AI Pipeline | 2/5 | In progress | - |
+| 3. AI Pipeline | 3/5 | In progress | - |
 | 4. Results Dashboard | 0/0 | Not started | - |
