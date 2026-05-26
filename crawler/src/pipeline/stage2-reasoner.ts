@@ -155,7 +155,7 @@ export async function runStage2Reasoning(
   console.log(`[pipeline] Stage 2: analyzing ${scoredIssues.length} scored issues`)
 
   const model = client.getGenerativeModel({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-1.5-flash-8b',
     tools: [EMIT_ANALYSIS_TOOL],
     toolConfig: {
       functionCallingConfig: {

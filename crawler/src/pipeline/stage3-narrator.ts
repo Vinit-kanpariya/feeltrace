@@ -107,7 +107,7 @@ export async function runStage3Narration(
 ): Promise<NarrativeResult> {
   console.log(`[pipeline] Stage 3: generating narrative for ${enrichedIssues.length} issues`)
 
-  const model = client.getGenerativeModel({ model: 'gemini-2.0-flash' })
+  const model = client.getGenerativeModel({ model: 'gemini-1.5-flash-8b' })
 
   const userPrompt = `Generate UX narrative:\n\nIssues:\n${JSON.stringify(enrichedIssues, null, 2)}\n\nCausal chains:\n${JSON.stringify(edges, null, 2)}`
 
