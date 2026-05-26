@@ -835,21 +835,24 @@ await prisma.$transaction(async (tx) => {
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Severity integer mapping: Critical=4 or Critical=1?**
    - What we know: `Issue.severity` is `Int` in the Prisma schema. The threshold table uses Critical=4.
    - What's unclear: Phase 4 (DASH-01) says "ordered by UX impact severity (Critical first)." If `severity` is sorted `ORDER BY severity DESC`, then Critical=4 is correct for descending sort. If ascending, it's reversed.
    - Recommendation: Define Critical=4, High=3, Medium=2, Low=1 and order by `severity DESC` in Phase 4. Document this mapping in `pipeline/types.ts`.
+   - **RESOLVED:** Critical=4, High=3, Medium=2, Low=1 per `SEVERITY_LABELS` constant in `pipeline/types.ts`. Phase 4 orders by `severity DESC` to show Critical issues first.
 
 2. **Schema change needed for `Issue.severity` human-readable label?**
    - What we know: `Issue.severity` is an `Int`. Phase 4 will need to display "Critical" / "High" / "Medium" / "Low" in the UI.
    - What's unclear: Whether Phase 4 should derive the label from the integer (4→Critical), or whether a string field should be added to `Issue`.
    - Recommendation: Derive in the Phase 4 display layer, not in the DB schema. No schema migration needed for Phase 3. Document the mapping convention in `pipeline/types.ts`.
+   - **RESOLVED:** Derive the human-readable label from the integer in the Phase 4 display layer. No schema migration needed in Phase 3. Mapping documented in `pipeline/types.ts` as `SEVERITY_LABELS`.
 
 3. **Zero-issues path: should an empty Result be created?**
    - What we know: Some pages may score zero issues (highly optimized sites). The pipeline must handle this without crashing or hanging in `analyzing` state.
    - Recommendation: Create a `Result` with empty `issues` and `edges` arrays and a narrative of "No significant issues found. This page performs well across the measured signal categories." Skip Stage 2 and Stage 3 calls entirely to avoid unnecessary API spend.
+   - **RESOLVED:** Create empty Result with hardcoded narrative `"No significant issues found."` when Stage 1 returns zero issues. Skip Stage 2 and Stage 3 calls entirely. Implemented in `run-pipeline.ts` early-return branch.
 
 ---
 
