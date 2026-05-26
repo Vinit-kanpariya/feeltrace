@@ -142,7 +142,7 @@ Plans:
 - [x] 04-05-PLAN.md — CausalityGraph ("use client", React Flow) + ShareButton ("use client", clipboard)
 
 **Wave 4** *(blocked on Wave 2 + Wave 3 completion — all components must exist)*
-- [ ] 04-06-PLAN.md — src/app/results/[jobId]/page.tsx + loading.tsx + not-found.tsx (full route assembly)
+- [x] 04-06-PLAN.md — src/app/results/[jobId]/page.tsx + loading.tsx + not-found.tsx (full route assembly)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 - [ ] 04-07-PLAN.md — [HUMAN CHECKPOINT] Full test suite green + browser smoke test (react.dev result, 6 issues, 5 causal edges)
@@ -158,4 +158,4 @@ Plans:
 | 1. Data Foundation & Security Baseline | 8/8 | Complete | 2026-05-18 |
 | 2. Crawler Service | 6/6 | Complete | 2026-05-26 |
 | 3. AI Pipeline | 5/5 | Complete | 2026-05-26 |
-| 4. Results Dashboard | 5/7 | In Progress | - |
+| 4. Results Dashboard | 6/7 | In Progress | - |

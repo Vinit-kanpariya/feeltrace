@@ -33,8 +33,8 @@ progress:
 | Milestone | MVP |
 | Current Phase | 4 — Results Dashboard |
 | Phase Name | Results Dashboard |
-| Current Plan | 04-06 (Wave 4) |
-| Status | Phase 4 IN PROGRESS — Waves 0+1+2+3 complete (5/7 plans done), ready for Wave 4 |
+| Current Plan | 04-07 (Wave 5) |
+| Status | Phase 4 IN PROGRESS — Waves 0+1+2+3+4 complete (6/7 plans done), ready for Wave 5 |
 
 **Progress**: Phase 3 of 4 complete, Phase 4 in progress (4/7 plans executed)
 
