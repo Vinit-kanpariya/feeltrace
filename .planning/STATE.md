@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-05-26T00:00:00.000Z"
+last_updated: "2026-05-26T14:00:00.000Z"
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 14
+  total_plans: 19
   completed_plans: 14
   percent: 50
 ---
@@ -31,11 +31,11 @@ progress:
 | Field | Value |
 |-------|-------|
 | Milestone | MVP |
-| Current Phase | 3 — AI Analysis Pipeline |
-| Phase Name | AI Analysis Pipeline |
-| Status | Phase 2 COMPLETE — ready to plan Phase 3 |
+| Current Phase | 3 — AI Pipeline |
+| Phase Name | AI Pipeline |
+| Status | Phase 3 PLANNED — ready to execute (5 plans, 4 waves) |
 
-**Progress**: Phase 2 of 4 complete
+**Progress**: Phase 2 of 4 complete, Phase 3 planned
 
 ```
 [Phase 1] ✓ → [Phase 2] ✓ → [Phase 3] → [Phase 4]
@@ -94,12 +94,16 @@ None currently.
 
 ## Session Continuity
 
-**To resume work**: Run `/gsd:plan-phase 3` to plan the AI Analysis Pipeline phase.
+**To resume work**: Run `/gsd:execute-phase 3` to execute the AI Pipeline plans.
 
 **Context for next session**:
 
-- Phase 2 produced: browser.ts (dual viewport crawl), 4 signal extractors (DOM/CSS/JS/Network), processor.ts (job lifecycle), server.ts (Hono + QStash)
-- Signals are in-memory only (INFRA-03) — Phase 3 will consume them from processJob and write Result/Issue/CausalEdge records
-- The TODO stub in processor.ts line 39: `// TODO Phase 3: invoke AI pipeline with _signals, write Result/Issue/CausalEdge records`
-- Key pitfall from Phase 2: Prisma 7 requires PrismaNeon adapter; postbuild must copy src/generated/prisma to dist/
-- Key pitfall from Phase 2: QStash receiver.verify() URL must exactly match delivery URL (use RAILWAY_CRAWLER_URL directly)
+- Phase 3 has 5 plans across 4 waves — start with 03-01 (ANTHROPIC_API_KEY checkpoint + SDK install)
+- Wave 1: 03-01 (SDK install, human checkpoint for ANTHROPIC_API_KEY)
+- Wave 2: 03-02 (pipeline types + Stage 1 scorer + tests) — deterministic, no Claude
+- Wave 3: 03-03 + 03-04 in parallel (Stage 2 reasoner + Stage 3 narrator + pipeline orchestrator)
+- Wave 4: 03-05 (wire into processor.ts + end-to-end smoke test with real URL)
+- Key pitfall: processor.ts TODO stub is at ~line 39; import `runAIPipeline` from `./pipeline/run-pipeline`
+- Key pitfall: Prisma 7 requires PrismaNeon adapter; postbuild must copy src/generated/prisma to dist/
+- Severity mapping: Critical=4, High=3, Medium=2, Low=1; Phase 4 orders by severity DESC
+- PERMITTED_MECHANISMS list (13 rules) defined in pipeline/types.ts — single source of truth for Stage 2 prompt + zod
