@@ -124,8 +124,30 @@ Plans:
   2. The plain-English narrative summary is the first and most prominent section on the results page — visible without scrolling on a standard desktop viewport
   3. When the causality graph meets the credibility threshold, a directed graph renders with technical cause nodes flowing toward perceived effect nodes; the graph is absent (not empty) when the threshold is not met
   4. A user can copy a share URL for an analysis and open it in a new browser session without logging in — the full results are visible to anyone with the link
-**Plans**: TBD
-**UI hint**: yes
+**Plans:** 7 plans
+
+Plans:
+
+**Wave 0** *(no dependencies — start here)*
+- [ ] 04-01-PLAN.md — Vitest include pattern fix (.test.{ts,tsx}) + 5 RED test stubs for DASH-01/02/03/04 and D-03
+
+**Wave 1** *(blocked on Wave 0 — test stubs must exist; 04-02 and 04-03 run in parallel)*
+- [ ] 04-02-PLAN.md — src/types/narrative.ts (D-01, D-02: NarrativeResult + SEVERITY_LABELS + CATEGORY_LABELS) + globals.css React Flow import (D-04)
+- [ ] 04-03-PLAN.md — sfw npm install @xyflow/react lucide-react + src/lib/graph-utils.ts (meetsCredibilityThreshold + buildGraphData) + JobStatusBadge rewrite (D-03)
+
+**Wave 2** *(blocked on Wave 1 completion — types and packages must exist)*
+- [ ] 04-04-PLAN.md — SeverityBadge + IssueCard + NarrativeSection + GraphAbsent Server Components
+
+**Wave 3** *(blocked on Wave 1 completion — packages must be installed; parallel with Wave 2)*
+- [ ] 04-05-PLAN.md — CausalityGraph ("use client", React Flow) + ShareButton ("use client", clipboard)
+
+**Wave 4** *(blocked on Wave 2 + Wave 3 completion — all components must exist)*
+- [ ] 04-06-PLAN.md — src/app/results/[jobId]/page.tsx + loading.tsx + not-found.tsx (full route assembly)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+- [ ] 04-07-PLAN.md — [HUMAN CHECKPOINT] Full test suite green + browser smoke test (react.dev result, 6 issues, 5 causal edges)
+
+**Cross-cutting constraints:** @xyflow/react stylesheet must be in globals.css (not inside CausalityGraph.tsx); params must be awaited in page.tsx (Next.js 15); Prisma lookup uses where: { jobId } not where: { id: jobId }; issues ordered at query layer not in JS; plain Node[]/Edge[] objects passed to CausalityGraph (not Prisma model instances); 04-02 and 04-03 run in parallel (Wave 1) — no file overlap; 04-04 and 04-05 run in parallel (Wave 2/3) — no file overlap
 
 ---
 
@@ -136,4 +158,4 @@ Plans:
 | 1. Data Foundation & Security Baseline | 8/8 | Complete | 2026-05-18 |
 | 2. Crawler Service | 6/6 | Complete | 2026-05-26 |
 | 3. AI Pipeline | 5/5 | Complete | 2026-05-26 |
-| 4. Results Dashboard | 0/0 | Not started | - |
+| 4. Results Dashboard | 0/7 | Not started | - |
