@@ -121,20 +121,30 @@ export function parseStage2Output(
     (item) => item.index >= 0 && item.index < scoredIssues.length,
   )
 
+  // Build reverse map: scoredIssue index → position in enrichedIssues / result.issues
+  // This is required because causal edge indices reference scoredIssues positions,
+  // but result.issues is ordered by enrichedIssues (a filtered subset).
+  const scoredToEnrichedPos = new Map<number, number>()
+  validEnriched.forEach((item, pos) => scoredToEnrichedPos.set(item.index, pos))
+
   // Merge ScoredIssue fields into EnrichedIssue using index lookup
   const enrichedIssues: EnrichedIssue[] = validEnriched.map((item) => ({
     ...scoredIssues[item.index],
     technical_description: item.technical_description,
   }))
 
-  // Filter: discard causal edges where from_index === to_index (self-edges)
+  // Filter: discard self-edges AND edges referencing scored issues that were not enriched
   const validEdges = parsed.causal_edges.filter(
-    (edge) => edge.from_index !== edge.to_index,
+    (edge) =>
+      edge.from_index !== edge.to_index &&
+      scoredToEnrichedPos.has(edge.from_index) &&
+      scoredToEnrichedPos.has(edge.to_index),
   )
 
+  // Remap from_index/to_index from scoredIssue space → enrichedIssue/result.issues position
   const edges: CausalEdgeCandidate[] = validEdges.map((edge) => ({
-    fromIndex: edge.from_index,
-    toIndex: edge.to_index,
+    fromIndex: scoredToEnrichedPos.get(edge.from_index)!,
+    toIndex: scoredToEnrichedPos.get(edge.to_index)!,
     mechanism: edge.mechanism,
     relationship: edge.relationship,
     confidence: edge.confidence,
