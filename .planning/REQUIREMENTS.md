@@ -26,7 +26,8 @@
 **: LLM reasoning stage (Claude Sonnet) explains why each scored issue matters and generates causality edges between issues — grounded only in signals that passed scoring; LLM is not permitted to invent issues
 - [x] **AI-03
 **: LLM narration stage (Claude Sonnet) generates a 2–4 paragraph plain-English summary readable by non-engineers (PMs, UX leads, agency clients)
-- [ ] **AI-04**: AI pipeline explicitly distinguishes perceived performance (how slow it feels) from technical performance (what the metrics say) in both the issue list and narrative
+- [x] **AI-04
+**: AI pipeline explicitly distinguishes perceived performance (how slow it feels) from technical performance (what the metrics say) in both the issue list and narrative
 
 ### Dashboard & Output (DASH)
 

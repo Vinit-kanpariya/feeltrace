@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-last_updated: "2026-05-26T10:38:54Z"
+status: unknown
+last_updated: "2026-05-26T10:45:13.849Z"
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 19
-  completed_plans: 17
-  percent: 89
+  completed_plans: 18
+  percent: 95
 ---
 
 # FeelTrace — Project State
@@ -33,10 +33,10 @@ progress:
 | Milestone | MVP |
 | Current Phase | 3 — AI Pipeline |
 | Phase Name | AI Pipeline |
-| Current Plan | 03-04 (Wave 3: Stage 3 narrator + pipeline orchestrator) |
-| Status | Phase 3 IN PROGRESS — 03-01, 03-02, 03-03 complete, 2 plans remaining |
+| Current Plan | 03-05 (Wave 4: wire processor.ts + end-to-end smoke test) |
+| Status | Phase 3 IN PROGRESS — 03-01, 03-02, 03-03, 03-04 complete, 1 plan remaining |
 
-**Progress**: Phase 2 of 4 complete, Phase 3 in progress (3/5 plans done)
+**Progress**: Phase 2 of 4 complete, Phase 3 in progress (4/5 plans done)
 
 ```
 [Phase 1] ✓ → [Phase 2] ✓ → [Phase 3] → [Phase 4]
@@ -51,12 +51,13 @@ progress:
 | Metric | Value |
 |--------|-------|
 | Phases complete | 2 / 4 |
-| Plans complete | 17 / 19 (Phase 1 + Phase 2 + 03-01 + 03-02 + 03-03) |
-| Unit tests | 75 passing (DOM: 11, JS: 9, Network: 7, Stage1: 20, Stage2: 7, server: 21) |
+| Plans complete | 18 / 19 (Phase 1 + Phase 2 + 03-01 + 03-02 + 03-03 + 03-04) |
+| Unit tests | 89 passing (DOM: 11, JS: 9, Network: 7, Stage1: 20, Stage2: 7, Stage3: 14, server: 21) |
 
 | Phase 03-ai-pipeline P01 | 5min | 2 tasks | 2 files |
 | Phase 03-ai-pipeline P02 | 32min | 2 tasks | 3 files |
 | Phase 03-ai-pipeline P03 | 6min | 2 tasks | 3 files |
+| Phase 03-ai-pipeline P04 | 12min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,7 @@ progress:
 | Install @google/generative-ai in crawler/ only (not root) | Keeps Gemini SDK out of Next.js bundle; crawler AI pipeline is the only consumer |
 | z.string().refine() over z.enum() cast for PERMITTED_MECHANISMS | readonly const tuple not castable to [string, ...string[]] in TypeScript 6; refine() is semantically equivalent |
 | EMIT_ANALYSIS_TOOL typed as Tool with SchemaType.ARRAY literal cast | @google/generative-ai FunctionDeclaration requires literal SchemaType enum values, not general SchemaType |
+| NarrativeResult cast via unknown for Prisma Json type | Plain interfaces lack the string index signature InputJsonValue requires; double-cast is safe since NarrativeResult is fully serialisable |
 
 ### Active Todos
 
@@ -102,18 +104,19 @@ None currently.
 
 ## Session Continuity
 
-**To resume work**: Run `/gsd:execute-phase 3` to continue Phase 3 from plan 03-04.
+**To resume work**: Run `/gsd:execute-phase 3` to continue Phase 3 from plan 03-05.
 
 **Context for next session**:
 
-- Phase 3 has 5 plans across 4 waves — 03-01, 03-02, 03-03 COMPLETE, 2 plans remaining
+- Phase 3 has 5 plans across 4 waves — 03-01, 03-02, 03-03, 03-04 COMPLETE, 1 plan remaining
 - Wave 1: 03-01 COMPLETE (Gemini SDK installed, GEMINI_API_KEY confirmed in crawler/.env)
 - Wave 2: 03-02 COMPLETE (types.ts + stage1-scorer.ts with 20 passing tests — AI-01, AI-04 satisfied)
 - Wave 3: 03-03 COMPLETE (gemini.ts singleton + stage2-reasoner.ts with 7 passing tests — AI-02 satisfied)
-- Wave 3 remaining: 03-04 (Stage 3 narrator + run-pipeline.ts orchestrator)
+- Wave 3: 03-04 COMPLETE (stage3-narrator.ts with 14 passing tests, run-pipeline.ts orchestrator — AI-03, AI-04 satisfied)
 - Wave 4: 03-05 (wire into processor.ts + end-to-end smoke test with real URL)
-- Key pitfall: processor.ts TODO stub is at ~line 39; import `runAIPipeline` from `./pipeline/run-pipeline`
+- Key pitfall: processor.ts TODO stub is at line 39; replace with `await runAIPipeline(jobId, _signals)`, import from `./pipeline/run-pipeline`
 - Key pitfall: Prisma 7 requires PrismaNeon adapter; postbuild must copy src/generated/prisma to dist/
 - Severity mapping: Critical=4, High=3, Medium=2, Low=1; Phase 4 orders by severity DESC
 - PERMITTED_MECHANISMS list (13 rules) defined in pipeline/types.ts — single source of truth for Stage 2 prompt + zod
 - stage2-reasoner.ts: z.string().refine() used for mechanism validation (not z.enum() — TypeScript 6 readonly cast issue)
+- run-pipeline.ts: NarrativeResult requires `as unknown as` double-cast for Prisma Json field type
