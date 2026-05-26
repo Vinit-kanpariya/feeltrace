@@ -129,17 +129,17 @@ Plans:
 Plans:
 
 **Wave 0** *(no dependencies — start here)*
-- [ ] 04-01-PLAN.md — Vitest include pattern fix (.test.{ts,tsx}) + 5 RED test stubs for DASH-01/02/03/04 and D-03
+- [x] 04-01-PLAN.md — Vitest include pattern fix (.test.{ts,tsx}) + 5 RED test stubs for DASH-01/02/03/04 and D-03
 
 **Wave 1** *(blocked on Wave 0 — test stubs must exist; 04-02 and 04-03 run in parallel)*
-- [ ] 04-02-PLAN.md — src/types/narrative.ts (D-01, D-02: NarrativeResult + SEVERITY_LABELS + CATEGORY_LABELS) + globals.css React Flow import (D-04)
-- [ ] 04-03-PLAN.md — sfw npm install @xyflow/react lucide-react + src/lib/graph-utils.ts (meetsCredibilityThreshold + buildGraphData) + JobStatusBadge rewrite (D-03)
+- [x] 04-02-PLAN.md — src/types/narrative.ts (D-01, D-02: NarrativeResult + SEVERITY_LABELS + CATEGORY_LABELS) + globals.css React Flow import (D-04)
+- [x] 04-03-PLAN.md — sfw npm install @xyflow/react lucide-react + src/lib/graph-utils.ts (meetsCredibilityThreshold + buildGraphData) + JobStatusBadge rewrite (D-03)
 
 **Wave 2** *(blocked on Wave 1 completion — types and packages must exist)*
-- [ ] 04-04-PLAN.md — SeverityBadge + IssueCard + NarrativeSection + GraphAbsent Server Components
+- [x] 04-04-PLAN.md — SeverityBadge + IssueCard + NarrativeSection + GraphAbsent Server Components
 
 **Wave 3** *(blocked on Wave 1 completion — packages must be installed; parallel with Wave 2)*
-- [ ] 04-05-PLAN.md — CausalityGraph ("use client", React Flow) + ShareButton ("use client", clipboard)
+- [x] 04-05-PLAN.md — CausalityGraph ("use client", React Flow) + ShareButton ("use client", clipboard)
 
 **Wave 4** *(blocked on Wave 2 + Wave 3 completion — all components must exist)*
 - [ ] 04-06-PLAN.md — src/app/results/[jobId]/page.tsx + loading.tsx + not-found.tsx (full route assembly)
@@ -158,4 +158,4 @@ Plans:
 | 1. Data Foundation & Security Baseline | 8/8 | Complete | 2026-05-18 |
 | 2. Crawler Service | 6/6 | Complete | 2026-05-26 |
 | 3. AI Pipeline | 5/5 | Complete | 2026-05-26 |
-| 4. Results Dashboard | 0/7 | Planned | - |
+| 4. Results Dashboard | 5/7 | In Progress | - |
