@@ -95,7 +95,24 @@ Plans:
   2. Each causality edge in the output has a non-null mechanism field stating the specific technical mechanism; no edge is created from correlation alone
   3. The narrative output includes a section that explicitly distinguishes perceived performance (how slow it feels) from technical performance (what the metrics say)
   4. The narrative is written at a level readable by a non-engineer — a PM or UX lead can understand the findings without a developer translator
-**Plans**: TBD
+**Plans:** 5 plans
+
+Plans:
+
+**Wave 1** *(no dependencies — start here)*
+- [ ] 03-01-PLAN.md — [HUMAN CHECKPOINT] Provision ANTHROPIC_API_KEY + install @anthropic-ai/sdk in crawler/
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 03-02-PLAN.md — Pipeline type contracts (types.ts) + Stage 1 deterministic scorer + unit tests (AI-01, AI-04)
+
+**Wave 3** *(blocked on Wave 2 completion — types must exist; plans 03-03 and 03-04 run in parallel)*
+- [ ] 03-03-PLAN.md — Anthropic SDK singleton (lib/anthropic.ts) + Stage 2 LLM reasoner + zod validation tests (AI-02)
+- [ ] 03-04-PLAN.md — Stage 3 LLM narrator + parser tests + run-pipeline.ts orchestrator with DB transaction (AI-03, AI-04)
+
+**Wave 4** *(blocked on Wave 3 completion — all pipeline files must exist before wiring)*
+- [ ] 03-05-PLAN.md — [HUMAN CHECKPOINT] Wire runAIPipeline into processor.ts + end-to-end smoke test
+
+**Cross-cutting constraints:** `crawler/src/pipeline/types.ts` (03-02) is the canonical pipeline type source — all pipeline files import from it; 03-03 and 03-04 run in parallel (Wave 3) — no file overlap; ANTHROPIC_API_KEY must be set in crawler/.env before any Wave 3+ execution
 
 ### Phase 4: Results Dashboard
 **Goal**: Users can view ranked issues, the plain-English narrative, and the causality graph on a results page — and share the analysis with teammates via a persistent link, without creating an account
@@ -118,5 +135,5 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Data Foundation & Security Baseline | 0/8 | Planning complete | - |
 | 2. Crawler Service | 0/6 | Planning complete | - |
-| 3. AI Pipeline | 0/0 | Not started | - |
+| 3. AI Pipeline | 0/5 | Planning complete | - |
 | 4. Results Dashboard | 0/0 | Not started | - |
