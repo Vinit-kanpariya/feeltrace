@@ -10,7 +10,7 @@ RUN npm ci --omit=dev
 COPY . .
 RUN npm run build
 
-# Railway injects PORT at runtime; default 3000 for local dev
+# PORT is injected at runtime by the platform (Fly.io / Railway); default 3000 for local dev
 ENV PORT=3000
 ENV NODE_ENV=production
 # Tell playwright-core where Chromium binary lives in this image

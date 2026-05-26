@@ -49,7 +49,7 @@ app.post('/crawl', async (c) => {
     await receiver.verify({
       body: rawBody, // MUST be raw string — not JSON.stringify(parsed)
       signature,
-      url: process.env.RAILWAY_PUBLIC_URL + '/crawl', // must match QStash delivery URL (T-02-07)
+      url: process.env.CRAWLER_PUBLIC_URL + '/crawl', // must match QStash delivery URL (T-02-07)
     })
   } catch {
     return c.json({ error: 'Invalid signature' }, 401)
