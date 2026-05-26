@@ -2,7 +2,7 @@
 // Stage 3 (LLM narration) → atomic Prisma DB write (Result + Issues + CausalEdges).
 // Source: .planning/phases/03-ai-pipeline/03-RESEARCH.md Pattern 6
 import { prisma } from '../lib/prisma'
-import { getGeminiClient } from '../lib/gemini'
+import { getGroqClient } from '../lib/groq-client'
 import { scoreSignals } from './stage1-scorer'
 import { runStage2Reasoning } from './stage2-reasoner'
 import { runStage3Narration } from './stage3-narrator'
@@ -43,7 +43,7 @@ export async function runAIPipeline(
   }
 
   // Stage 2: LLM reasoning — enriches scored issues with technical descriptions and causal edges
-  const client = getGeminiClient()
+  const client = getGroqClient()
   const { enrichedIssues, edges } = await runStage2Reasoning(client, scoredIssues)
   console.log(`[pipeline] Job ${jobId}: Stage 2 complete — ${edges.length} causal edges`)
 

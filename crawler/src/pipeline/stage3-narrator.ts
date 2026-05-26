@@ -1,12 +1,6 @@
-// Stage 3: LLM narration — takes enriched issues and causal edges, calls Gemini for a
-// plain-English narrative with distinct perceived vs technical performance sections (AI-03, AI-04).
-// Source: .planning/phases/03-ai-pipeline/03-RESEARCH.md Pattern 3
-import { GoogleGenerativeAI } from '@google/generative-ai'
+// Stage 3: LLM narration — calls Groq for a plain-English narrative (AI-03, AI-04).
+import Groq from 'groq-sdk'
 import type { EnrichedIssue, CausalEdgeCandidate, NarrativeResult } from './types'
-
-// ---------------------------------------------------------------------------
-// Module-level static prompt — 100% static, no runtime interpolation
-// ---------------------------------------------------------------------------
 
 const NARRATOR_SYSTEM_PROMPT = `You are a UX experience narrator. You receive a list of enriched UX issues and causal chains identified on a web page, and your job is to write a clear, human-centered narrative for a mixed audience of product managers, UX designers, and developers.
 
@@ -31,15 +25,6 @@ Rules:
 - Write for a developer audience in [TECHNICAL PERFORMANCE].
 - Do not invent issues not present in the input list.`
 
-// ---------------------------------------------------------------------------
-// Pure parser function — exported for unit testing without API calls
-// ---------------------------------------------------------------------------
-
-/**
- * Splits a structured LLM narrative response on section markers and returns a NarrativeResult.
- * Missing sections return empty string (summary, perceivedPerformance, technicalPerformance)
- * or empty array (recommendations) — never throws.
- */
 export function parseNarrativeOutput(text: string): NarrativeResult {
   const MARKERS = [
     '[SUMMARY]',
@@ -48,27 +33,19 @@ export function parseNarrativeOutput(text: string): NarrativeResult {
     '[RECOMMENDATIONS]',
   ] as const
 
-  // Extract text between consecutive markers (or from a marker to end of string)
   function extractSection(marker: string): string {
     const markerIdx = text.indexOf(marker)
     if (markerIdx === -1) return ''
-
     const contentStart = markerIdx + marker.length
-
-    // Find the next marker that appears after this one
     let nextMarkerIdx = text.length
     for (const m of MARKERS) {
       if (m === marker) continue
       const idx = text.indexOf(m, contentStart)
-      if (idx !== -1 && idx < nextMarkerIdx) {
-        nextMarkerIdx = idx
-      }
+      if (idx !== -1 && idx < nextMarkerIdx) nextMarkerIdx = idx
     }
-
     return text.slice(contentStart, nextMarkerIdx).trim()
   }
 
-  // Parse recommendations: split on newlines, keep lines starting with "- " or "* ", strip prefix
   function parseRecommendations(section: string): string[] {
     if (!section) return []
     return section
@@ -79,44 +56,33 @@ export function parseNarrativeOutput(text: string): NarrativeResult {
       .filter((line) => line.length > 0)
   }
 
-  const summaryText = extractSection('[SUMMARY]')
-  const perceivedText = extractSection('[PERCEIVED PERFORMANCE]')
-  const technicalText = extractSection('[TECHNICAL PERFORMANCE]')
-  const recommendationsText = extractSection('[RECOMMENDATIONS]')
-
   return {
-    summary: summaryText,
-    perceivedPerformance: perceivedText,
-    technicalPerformance: technicalText,
-    recommendations: parseRecommendations(recommendationsText),
+    summary: extractSection('[SUMMARY]'),
+    perceivedPerformance: extractSection('[PERCEIVED PERFORMANCE]'),
+    technicalPerformance: extractSection('[TECHNICAL PERFORMANCE]'),
+    recommendations: parseRecommendations(extractSection('[RECOMMENDATIONS]')),
   }
 }
 
-// ---------------------------------------------------------------------------
-// Stage 3 LLM call — plain text output, no function calling
-// ---------------------------------------------------------------------------
-
-/**
- * Calls Gemini to generate a structured plain-English narrative from enriched issues and edges.
- * Returns a NarrativeResult with distinct perceived vs technical performance sections (AI-04).
- */
 export async function runStage3Narration(
-  client: GoogleGenerativeAI,
+  client: Groq,
   enrichedIssues: EnrichedIssue[],
   edges: CausalEdgeCandidate[],
 ): Promise<NarrativeResult> {
   console.log(`[pipeline] Stage 3: generating narrative for ${enrichedIssues.length} issues`)
 
-  const model = client.getGenerativeModel({ model: 'gemini-2.0-flash-lite' })
-
   const userPrompt = `Generate UX narrative:\n\nIssues:\n${JSON.stringify(enrichedIssues, null, 2)}\n\nCausal chains:\n${JSON.stringify(edges, null, 2)}`
 
-  const result = await model.generateContent({
-    systemInstruction: NARRATOR_SYSTEM_PROMPT,
-    contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+  const response = await client.chat.completions.create({
+    model: 'llama-3.3-70b-versatile',
+    messages: [
+      { role: 'system', content: NARRATOR_SYSTEM_PROMPT },
+      { role: 'user', content: userPrompt },
+    ],
+    max_tokens: 1024,
   })
 
-  const text = result.response.text()
+  const text = response.choices[0]?.message?.content ?? ''
   console.log(`[pipeline] Stage 3: narrative generated (${text.length} chars)`)
   return parseNarrativeOutput(text)
 }

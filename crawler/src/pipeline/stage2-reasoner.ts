@@ -1,13 +1,12 @@
-// Stage 2: LLM reasoning — takes scored issues, calls Gemini with forced function calling,
+// Stage 2: LLM reasoning — takes scored issues, calls Groq with forced function calling,
 // returns per-issue technical descriptions and causality edge candidates.
-// Source: .planning/phases/03-ai-pipeline/03-RESEARCH.md Pattern 2 + Pattern 4
-import { GoogleGenerativeAI, SchemaType, FunctionCallingMode, type Tool } from '@google/generative-ai'
+import Groq from 'groq-sdk'
 import { z } from 'zod/v4'
 import type { ScoredIssue, EnrichedIssue, CausalEdgeCandidate } from './types'
 import { PERMITTED_MECHANISMS } from './types'
 
 // ---------------------------------------------------------------------------
-// Module-level static constants — no runtime interpolation (prompt cache safety)
+// Module-level static constants — no runtime interpolation
 // ---------------------------------------------------------------------------
 
 const CAUSALITY_MECHANISM_RULES = `
@@ -42,38 +41,39 @@ const SYSTEM_PROMPT = `You are a UX performance analysis engine. You receive a l
 ${CAUSALITY_MECHANISM_RULES}`
 
 // ---------------------------------------------------------------------------
-// Gemini function tool definition
+// Groq tool definition — OpenAI-compatible function calling format
 // ---------------------------------------------------------------------------
 
-const EMIT_ANALYSIS_TOOL: Tool = {
-  functionDeclarations: [{
+const EMIT_ANALYSIS_TOOL: Groq.Chat.Completions.ChatCompletionTool = {
+  type: 'function',
+  function: {
     name: 'emit_analysis',
     description: 'Emit structured analysis: per-issue explanations and causality edges.',
     parameters: {
-      type: SchemaType.OBJECT,
+      type: 'object',
       properties: {
         enriched_issues: {
-          type: SchemaType.ARRAY as SchemaType.ARRAY,
+          type: 'array',
           items: {
-            type: SchemaType.OBJECT,
+            type: 'object',
             properties: {
-              index: { type: SchemaType.NUMBER, description: 'Zero-based index into the input scored_issues array' },
-              technical_description: { type: SchemaType.STRING, description: 'Plain-English explanation (1-3 sentences)' },
+              index: { type: 'number', description: 'Zero-based index into the input scored_issues array' },
+              technical_description: { type: 'string', description: 'Plain-English explanation (1-3 sentences)' },
             },
             required: ['index', 'technical_description'],
           },
         },
         causal_edges: {
-          type: SchemaType.ARRAY as SchemaType.ARRAY,
+          type: 'array',
           items: {
-            type: SchemaType.OBJECT,
+            type: 'object',
             properties: {
-              from_index: { type: SchemaType.NUMBER },
-              to_index: { type: SchemaType.NUMBER },
-              mechanism: { type: SchemaType.STRING, description: 'Must be one of the 13 permitted mechanism strings' },
-              relationship: { type: SchemaType.STRING },
-              confidence: { type: SchemaType.STRING, description: 'high | medium | low' },
-              explanation: { type: SchemaType.STRING, description: 'One sentence explaining why this edge exists' },
+              from_index: { type: 'number' },
+              to_index: { type: 'number' },
+              mechanism: { type: 'string', description: 'Must be one of the 13 permitted mechanism strings' },
+              relationship: { type: 'string' },
+              confidence: { type: 'string', description: 'high | medium | low' },
+              explanation: { type: 'string', description: 'One sentence explaining why this edge exists' },
             },
             required: ['from_index', 'to_index', 'mechanism', 'relationship', 'confidence', 'explanation'],
           },
@@ -81,7 +81,7 @@ const EMIT_ANALYSIS_TOOL: Tool = {
       },
       required: ['enriched_issues', 'causal_edges'],
     },
-  }],
+  },
 }
 
 // ---------------------------------------------------------------------------
@@ -145,40 +145,32 @@ export function parseStage2Output(
 }
 
 // ---------------------------------------------------------------------------
-// Stage 2 LLM call — uses Gemini forced function calling
+// Stage 2 LLM call — Groq forced function calling
 // ---------------------------------------------------------------------------
 
 export async function runStage2Reasoning(
-  client: GoogleGenerativeAI,
+  client: Groq,
   scoredIssues: ScoredIssue[],
 ): Promise<{ enrichedIssues: EnrichedIssue[]; edges: CausalEdgeCandidate[] }> {
   console.log(`[pipeline] Stage 2: analyzing ${scoredIssues.length} scored issues`)
 
-  const model = client.getGenerativeModel({
-    model: 'gemini-2.0-flash-lite',
+  const response = await client.chat.completions.create({
+    model: 'llama-3.3-70b-versatile',
+    messages: [
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user', content: `Analyze these scored UX issues:\n\n${JSON.stringify(scoredIssues, null, 2)}` },
+    ],
     tools: [EMIT_ANALYSIS_TOOL],
-    toolConfig: {
-      functionCallingConfig: {
-        mode: FunctionCallingMode.ANY,
-        allowedFunctionNames: ['emit_analysis'],
-      },
-    },
+    tool_choice: { type: 'function', function: { name: 'emit_analysis' } },
+    max_tokens: 2048,
   })
 
-  const result = await model.generateContent({
-    systemInstruction: SYSTEM_PROMPT,
-    contents: [{
-      role: 'user',
-      parts: [{ text: `Analyze these scored UX issues:\n\n${JSON.stringify(scoredIssues, null, 2)}` }],
-    }],
-  })
-
-  const functionCall = result.response.functionCalls()?.[0]
-  if (!functionCall) {
-    throw new Error('Stage 2: expected function call not returned by model')
+  const toolCall = response.choices[0]?.message?.tool_calls?.[0]
+  if (!toolCall || toolCall.type !== 'function') {
+    throw new Error('Stage 2: expected tool call not returned by model')
   }
 
-  const raw = functionCall.args as Record<string, unknown>
+  const raw = JSON.parse(toolCall.function.arguments) as Record<string, unknown>
   console.log(`[pipeline] Stage 2: received function call, parsing output`)
   return parseStage2Output(raw, scoredIssues)
 }
