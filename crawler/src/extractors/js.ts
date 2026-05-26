@@ -120,14 +120,19 @@ export async function extractJSSignals(page: Page): Promise<JSSignals> {
     }
 
     // Framework fingerprint — whitelist only; never include arbitrary window properties
+    type FrameworkWindow = Window & {
+      __NEXT_DATA__?: unknown; React?: unknown; __REACT_DEVTOOLS_GLOBAL_HOOK__?: unknown
+      __vue_app__?: unknown; __nuxt?: unknown; Svelte?: unknown
+    }
+    const w = window as FrameworkWindow
     const frameworkFingerprint: string[] = []
-    if ((window as any).__NEXT_DATA__) frameworkFingerprint.push('nextjs')
-    if ((window as any).React || (window as any).__REACT_DEVTOOLS_GLOBAL_HOOK__) {
+    if (w.__NEXT_DATA__) frameworkFingerprint.push('nextjs')
+    if (w.React || w.__REACT_DEVTOOLS_GLOBAL_HOOK__) {
       if (!frameworkFingerprint.includes('react')) frameworkFingerprint.push('react')
     }
-    if ((window as any).__vue_app__) frameworkFingerprint.push('vue3')
-    if ((window as any).__nuxt) frameworkFingerprint.push('nuxt')
-    if ((window as any).Svelte || document.querySelector('[class^="svelte-"]')) {
+    if (w.__vue_app__) frameworkFingerprint.push('vue3')
+    if (w.__nuxt) frameworkFingerprint.push('nuxt')
+    if (w.Svelte || document.querySelector('[class^="svelte-"]')) {
       frameworkFingerprint.push('svelte')
     }
 

@@ -25,14 +25,15 @@ export async function waitForSpaHydration(page: Page, timeoutMs = 10_000): Promi
   try {
     await page.waitForFunction(
       () => {
-        if ((window as any).__NEXT_DATA__) return true
+        const w = window as Window & { __NEXT_DATA__?: unknown; __vue_app__?: unknown; __nuxt?: unknown }
+        if (w.__NEXT_DATA__) return true
         const root = document.getElementById('root') || document.getElementById('__next')
         if (root) {
           const keys = Object.keys(root)
           if (keys.some(k => k.startsWith('__reactFiber') || k.startsWith('__reactContainer'))) return true
         }
-        if ((window as any).__vue_app__) return true
-        if ((window as any).__nuxt) return true
+        if (w.__vue_app__) return true
+        if (w.__nuxt) return true
         if (document.readyState === 'complete') return true
         return false
       },
