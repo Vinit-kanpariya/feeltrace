@@ -1,5 +1,6 @@
 import { prisma } from './lib/prisma'
 import { runDualViewportCrawl } from './browser'
+import { runAIPipeline } from './pipeline/run-pipeline'
 
 const SLA_MS = 55_000 // D-28: 55s budget, 5s headroom from 60s job SLA
 
@@ -31,12 +32,14 @@ export async function processJob(jobId: string, url: string): Promise<void> {
     await prisma.job.update({ where: { id: jobId }, data: { status: 'extracting' } })
 
     // Signals are in-memory only per INFRA-03 — raw signal payloads are not written to DB
-    const _signals = { mobile, desktop }
+    const signals = { mobile, desktop }
     console.log(`[processor] Job ${jobId} signals collected: mobile=${mobile.viewport}, desktop=${desktop.viewport}`)
 
     await prisma.job.update({ where: { id: jobId }, data: { status: 'analyzing' } })
 
-    // TODO Phase 3: invoke AI pipeline with _signals, write Result/Issue/CausalEdge records
+    // Phase 3: AI pipeline — scoreSignals → LLM reasoning → LLM narration → DB write
+    await runAIPipeline(jobId, signals)
+
     await prisma.job.update({ where: { id: jobId }, data: { status: 'complete' } })
     console.log(`[processor] Job ${jobId} completed in ${Date.now() - startedAt}ms`)
   } catch (err) {
