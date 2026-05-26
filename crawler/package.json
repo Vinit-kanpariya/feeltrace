@@ -5,7 +5,9 @@
   "type": "commonjs",
   "main": "dist/index.js",
   "scripts": {
+    "prebuild": "prisma generate --schema=./prisma/schema.prisma",
     "build": "tsc",
+    "postbuild": "node -e \"require('fs').cpSync('src/generated/prisma', 'dist/generated/prisma', {recursive:true, force:true})\"",
     "dev": "ts-node src/index.ts",
     "start": "node dist/index.js"
   },
