@@ -21,7 +21,7 @@
 
 ### AI Pipeline (AI)
 
-- [ ] **AI-01**: Rule-based scoring stage classifies each extracted signal into Critical / High / Medium / Low severity using deterministic thresholds (no LLM at this stage)
+- [x] **AI-01**: Rule-based scoring stage classifies each extracted signal into Critical / High / Medium / Low severity using deterministic thresholds (no LLM at this stage)
 - [x] **AI-02
 **: LLM reasoning stage (Claude Sonnet) explains why each scored issue matters and generates causality edges between issues — grounded only in signals that passed scoring; LLM is not permitted to invent issues
 - [x] **AI-03
