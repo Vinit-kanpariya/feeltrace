@@ -1,7 +1,7 @@
 ---
 phase: 4
 slug: results-dashboard
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 created: 2026-05-26
@@ -54,13 +54,12 @@ Exceptions:
 | Role | Size | Weight | Line Height | Font | Usage |
 |------|------|--------|-------------|------|-------|
 | Body | 16px | 400 (regular) | 1.5 | Geist Sans | Narrative paragraphs, issue technical_description, edge explanation |
-| Label | 14px | 500 (medium) | 1.4 | Geist Sans | Severity badge label, section sub-labels, signal source strings |
+| Label | 14px | 400 (regular) | 1.4 | Geist Sans | Severity badge label, section sub-labels, signal source strings |
 | Heading | 24px | 600 (semibold) | 1.2 | Geist Sans | Section headings ("What we found", "Narrative Summary", "Causality Graph") |
-| Display | 32px | 700 (bold) | 1.1 | Geist Sans | Page title: analyzed URL or "UX Analysis Results" |
-| Mono | 13px | 400 (regular) | 1.4 | Geist Mono | raw_evidence values (e.g. "2400ms (threshold: >2000ms Critical)"), signal_source strings |
+| Display | 32px | 600 (semibold) | 1.1 | Geist Sans | Page title: analyzed URL or "UX Analysis Results" |
+| Mono | 14px | 400 (regular) | 1.4 | Geist Mono | raw_evidence values (e.g. "2400ms (threshold: >2000ms Critical)"), signal_source strings |
 
-Two weights declared for body/narrative flow: regular (400) + semibold (600).
-Label uses 500 as a middle weight only for badge legibility — not in body copy.
+Two weights declared: regular (400) and semibold (600). Mono and Label roles share 14px — differentiated by font family (Geist Mono vs Geist Sans), not by size.
 
 ---
 
@@ -73,7 +72,7 @@ Label uses 500 as a middle weight only for badge legibility — not in body copy
 | Accent (10%) | `#2563eb` (blue-600) | Share button, active link underline, React Flow selected node border |
 | Destructive | not applicable | No destructive actions in Phase 4 (read-only results page) |
 
-Accent reserved for: **Share / copy-link button** and **React Flow selected node border** only. Never used for severity badges, headings, or decorative elements.
+Accent reserved for: **Share / copy-link button**, **React Flow selected node border**, and **recommendation list ArrowRight icons** only. Never used for severity badges, headings, or other decorative elements.
 
 ### Severity Color Mapping
 
@@ -134,7 +133,7 @@ Destructive actions: none. Phase 4 is a read-only results display.
 | Data source | `Result.narrative` JSON parsed as `NarrativeResult` interface from `crawler/src/pipeline/types.ts` |
 | Sub-sections | summary (Overview), perceivedPerformance (How it feels), technicalPerformance (What the data says), recommendations (bulleted list) |
 | Background | Secondary surface color — visually distinct from page background |
-| Typography | Body (16px/400/1.5) for paragraph text; Label (14px/500) for sub-section labels |
+| Typography | Body (16px/400/1.5) for paragraph text; Label (14px/400) for sub-section labels |
 | Padding | lg (24px) internal |
 | Width | Full-width container, max-w-4xl centered |
 | Server / Client | Server Component (no interactivity) |
@@ -147,8 +146,8 @@ Destructive actions: none. Phase 4 is a read-only results display.
 | Sort order | Ordered by `severity DESC` (Critical first = 4 first) — enforced at query layer, not display layer |
 | SeverityBadge | Pill shape, bg/text per severity color table above, label from `SEVERITY_LABELS` constant |
 | Category label | `perceived-perf` renders as "Perceived Performance", `technical-perf` as "Technical Performance", `accessibility` as "Accessibility" |
-| Signal source | Displayed in Geist Mono 13px, prefixed with "Signal: " |
-| Raw evidence | Displayed in Geist Mono 13px, prefixed with "Evidence: ", inside a muted bordered box |
+| Signal source | Displayed in Geist Mono 14px, prefixed with "Signal: " |
+| Raw evidence | Displayed in Geist Mono 14px, prefixed with "Evidence: ", inside a muted bordered box |
 | Technical description | Body text (16px/400/1.5) — primary readable content of the card |
 | Layout | Vertical stack: [SeverityBadge + category row] → [technical_description] → [Signal / Evidence mono block] |
 | Padding | md (16px) |
@@ -159,7 +158,7 @@ Destructive actions: none. Phase 4 is a read-only results display.
 
 | Property | Contract |
 |----------|----------|
-| Shape | `border-radius: 9999px` (pill), 14px font, 500 weight |
+| Shape | `border-radius: 9999px` (pill), 14px font, 600 weight |
 | Padding | xs (4px) vertical, sm (8px) horizontal |
 | Color | Per severity color mapping table — no exceptions |
 | Content | Severity label only: "Critical", "High", "Medium", "Low" — no icon |
@@ -279,11 +278,11 @@ Both packages must be installed with the `sfw` prefix per CLAUDE.md: `sfw npm in
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
+- [x] Dimension 1 Copywriting: PASS
+- [x] Dimension 2 Visuals: PASS
+- [x] Dimension 3 Color: FLAG (resolved — ArrowRight icons added to accent reserved-for list)
+- [x] Dimension 4 Typography: PASS
+- [x] Dimension 5 Spacing: PASS
+- [x] Dimension 6 Registry Safety: PASS
 
-**Approval:** pending
+**Approval:** approved 2026-05-26
