@@ -1,7 +1,7 @@
 # FeelTrace v1.1 — Roadmap
 
 **Milestone:** v1.1 Analysis Depth
-**Status:** Planning
+**Status:** In Progress
 **Phases:** 5–8 (continues from v1.0)
 **Requirements:** 15 / 15 mapped
 
@@ -23,8 +23,8 @@ Four phases in dependency order: clean up v1.0 debt first (Phase 5), then expand
 **Plans:** 2 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — Delete gemini.ts, remove @google/generative-ai dep, align TechProfile types
-- [ ] 05-02-PLAN.md — Failed-job error page branch, crawler startup env validation
+- [x] 05-01-PLAN.md — Delete gemini.ts, remove @google/generative-ai dep, align TechProfile types
+- [x] 05-02-PLAN.md — Failed-job error page branch, crawler startup env validation
 
 **Success criteria:**
 1. Running the crawler produces no dead Gemini import warnings or unused dependency installs
