@@ -5,7 +5,7 @@ import { put } from '@vercel/blob'
 import { prisma } from '../lib/prisma'
 import { getGroqClient } from '../lib/groq-client'
 import { scoreSignals } from './stage1-scorer'
-import { scoreExternalSignals } from './stage1-external-scorer'
+import { scoreExternalSignals, scoreAxeViolations } from './stage1-external-scorer'
 import { runStage2Reasoning } from './stage2-reasoner'
 import { runStage3Narration } from './stage3-narrator'
 import type { CrawlPass, TechProfile, ExternalSignals } from '../lib/types'
@@ -49,6 +49,8 @@ export async function runAIPipeline(
   const scoredIssues = scoreSignals(signals.mobile, signals.desktop)
   // Append external signal scores (CWV + Lighthouse from PSI)
   scoredIssues.push(...scoreExternalSignals(externalSignals ?? { cwv: null, lighthouse: null }))
+  // Append axe accessibility violation scores (desktop-only; axeViolations is undefined on mobile pass)
+  scoredIssues.push(...scoreAxeViolations(signals.desktop.axeViolations ?? []))
   console.log(`[pipeline] Job ${jobId}: ${scoredIssues.length} issues scored`)
 
   // Upload screenshot to Vercel Blob (non-blocking — proceeds even if upload fails)

@@ -218,10 +218,51 @@ export function scoreExternalSignals(signals: ExternalSignals): ScoredIssue[] {
 }
 
 /**
- * Scores axe-core accessibility violations.
- * Stub — Plan 06-02 replaces the body. Export contract is stable.
+ * Maps axe-core impact strings to ScoredIssue severity integers.
+ * critical → 4, serious → 3, moderate → 2, minor → 1
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function scoreAxeViolations(_violations: AxeViolation[]): ScoredIssue[] {
-  return []
+const AXE_IMPACT_SEVERITY: Record<string, 1 | 2 | 3 | 4> = {
+  critical: 4,
+  serious: 3,
+  moderate: 2,
+  minor: 1,
+}
+
+/**
+ * Scores axe-core accessibility violations into ScoredIssue[].
+ *
+ * Dedup: one ScoredIssue per unique violation ID (first occurrence wins).
+ * Cap: at most 10 unique violation IDs emitted.
+ * raw_evidence: "<id>: <impact> impact — <count> node(s) affected: <target1>; <target2>; ..."
+ * viewport: 'desktop' — axe only runs on the desktop pass.
+ */
+export function scoreAxeViolations(violations: AxeViolation[]): ScoredIssue[] {
+  // Deduplicate by violation ID — first occurrence wins
+  const seen = new Set<string>()
+  const unique: AxeViolation[] = []
+  for (const v of violations) {
+    if (!seen.has(v.id)) {
+      seen.add(v.id)
+      unique.push(v)
+    }
+  }
+
+  // Cap at 10 unique violation IDs
+  const capped = unique.slice(0, 10)
+
+  return capped.map((v) => {
+    const severity = AXE_IMPACT_SEVERITY[v.impact] ?? 1
+    // Defensively re-slice to 5 nodes (browser.ts already slices, but guard here too)
+    const topNodes = v.nodes.slice(0, 5)
+    const nodeTargets = topNodes.map((n) => n.target).join('; ')
+    const raw_evidence = `${v.id}: ${v.impact} impact — ${topNodes.length} node(s) affected: ${nodeTargets}`
+
+    return {
+      category: 'accessibility' as const,
+      signal_source: `axe.${v.id}`,
+      severity,
+      raw_evidence,
+      viewport: 'desktop' as const,
+    }
+  })
 }
