@@ -181,12 +181,96 @@ describe('scoreExternalSignals', () => {
 })
 
 // ---------------------------------------------------------------------------
-// scoreAxeViolations stub
+// scoreAxeViolations — helpers
+// ---------------------------------------------------------------------------
+
+import type { AxeViolation } from '../lib/types'
+
+function makeViolation(overrides: Partial<AxeViolation> & { id: string }): AxeViolation {
+  return {
+    id: overrides.id,
+    impact: overrides.impact ?? 'minor',
+    description: overrides.description ?? 'Test violation',
+    helpUrl: overrides.helpUrl ?? 'https://axe-core.org',
+    nodes: overrides.nodes ?? [{ target: '#btn', failureSummary: 'Fix this' }],
+  }
+}
+
+// ---------------------------------------------------------------------------
+// scoreAxeViolations — real implementation tests (Plan 06-02)
 // ---------------------------------------------------------------------------
 
 describe('scoreAxeViolations', () => {
-  it('returns [] (stub — full tests in Plan 06-02)', () => {
-    const result = scoreAxeViolations([])
-    expect(result).toEqual([])
+  it('returns [] for empty input', () => {
+    expect(scoreAxeViolations([])).toEqual([])
+  })
+
+  it('maps critical impact to severity 4', () => {
+    const issues = scoreAxeViolations([makeViolation({ id: 'v1', impact: 'critical' })])
+    expect(issues).toHaveLength(1)
+    expect(issues[0].severity).toBe(4)
+  })
+
+  it('maps serious impact to severity 3', () => {
+    const issues = scoreAxeViolations([makeViolation({ id: 'v1', impact: 'serious' })])
+    expect(issues[0].severity).toBe(3)
+  })
+
+  it('maps moderate impact to severity 2', () => {
+    const issues = scoreAxeViolations([makeViolation({ id: 'v1', impact: 'moderate' })])
+    expect(issues[0].severity).toBe(2)
+  })
+
+  it('maps minor impact to severity 1', () => {
+    const issues = scoreAxeViolations([makeViolation({ id: 'v1', impact: 'minor' })])
+    expect(issues[0].severity).toBe(1)
+  })
+
+  it('caps output at 10 unique violation IDs when given 15', () => {
+    const violations = Array.from({ length: 15 }, (_, i) =>
+      makeViolation({ id: `violation-${i}`, impact: 'minor' })
+    )
+    const issues = scoreAxeViolations(violations)
+    expect(issues).toHaveLength(10)
+  })
+
+  it('uses first 5 nodes in raw_evidence when violation has 8 nodes', () => {
+    const nodes = Array.from({ length: 8 }, (_, i) => ({
+      target: `#target-${i}`,
+      failureSummary: 'Fix it',
+    }))
+    const issues = scoreAxeViolations([makeViolation({ id: 'v1', impact: 'serious', nodes })])
+    expect(issues).toHaveLength(1)
+    // raw_evidence should mention "5 node(s)" not 8
+    expect(issues[0].raw_evidence).toContain('5 node(s)')
+    // Should NOT contain target-5 through target-7 (only 0-4 included)
+    expect(issues[0].raw_evidence).not.toContain('#target-5')
+    expect(issues[0].raw_evidence).not.toContain('#target-6')
+    expect(issues[0].raw_evidence).not.toContain('#target-7')
+  })
+
+  it('deduplicates violations with the same id — emits only one ScoredIssue', () => {
+    const violations = [
+      makeViolation({ id: 'duplicate', impact: 'critical' }),
+      makeViolation({ id: 'duplicate', impact: 'minor' }),
+    ]
+    const issues = scoreAxeViolations(violations)
+    expect(issues).toHaveLength(1)
+    // First occurrence wins — severity should be 4 (critical)
+    expect(issues[0].severity).toBe(4)
+  })
+
+  it('prefixes signal_source with axe dot notation', () => {
+    const issues = scoreAxeViolations([makeViolation({ id: 'color-contrast' })])
+    expect(issues[0].signal_source).toBe('axe.color-contrast')
+  })
+
+  it('emits viewport desktop for all violations', () => {
+    const violations = [
+      makeViolation({ id: 'v1', impact: 'critical' }),
+      makeViolation({ id: 'v2', impact: 'minor' }),
+    ]
+    const issues = scoreAxeViolations(violations)
+    expect(issues.every((i) => i.viewport === 'desktop')).toBe(true)
   })
 })
