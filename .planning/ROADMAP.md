@@ -59,6 +59,13 @@ Plans:
 **Goal:** Extend the AI pipeline to produce actionable fixes, severity justification, page-type awareness, benchmark comparisons, and visual analysis
 **Depends on:** Phase 6 (new signals feed the pipeline)
 **Requirements:** SIGNAL-04, AI-01, AI-02, AI-03, AI-04
+**Plans:** 4 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — Stage 1.5 vision scanner: screenshot → Groq vision model → ScoredIssue[] (SIGNAL-04)
+- [ ] 07-02-PLAN.md — Stage 2 enrichment: fix_suggestion + severity_justification fields, Prisma schema + migration (AI-01, AI-02)
+- [ ] 07-03-PLAN.md — Page-type detector + benchmark context builder + Stage 3 wiring (AI-03, AI-04)
+- [ ] 07-04-PLAN.md — UI display: IssueCard fix/impact rows, results page type annotation (AI-01, AI-02)
 
 **Success criteria:**
 1. Each issue includes a concrete fix suggestion (specific action, not advisory)
