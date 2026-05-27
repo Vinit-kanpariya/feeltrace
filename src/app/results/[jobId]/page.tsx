@@ -92,7 +92,9 @@ export default async function ResultsPage({
   }
 
   // D-06: Failed analysis — render inline error section (HTTP 200)
-  if (result.job.status === 'failed' || result.job.error_message) {
+  // WR-01: Gate strictly on status === 'failed'. error_message alone is not a reliable
+  // failure signal — it is never cleared on retry and could be set on non-terminal jobs.
+  if (result.job.status === 'failed') {
     return (
       <div className="min-h-dvh bg-[#0f172a] flex flex-col">
         <ResultsHeader />
@@ -114,7 +116,14 @@ export default async function ResultsPage({
   const techProfile = result.tech_stack ? (result.tech_stack as unknown as TechProfile) : null
 
   // Extract hostname for page title (UI-SPEC copywriting: "UX Analysis: {hostname}")
-  const hostname = new URL(result.job.url).hostname
+  // CR-01: new URL() throws TypeError on malformed URLs (e.g. bare hostnames without scheme).
+  // Fall back to the raw string rather than crashing the Server Component.
+  let hostname: string
+  try {
+    hostname = new URL(result.job.url).hostname
+  } catch {
+    hostname = result.job.url
+  }
 
   // Graph credibility check — must meet threshold before rendering React Flow canvas
   const showGraph = meetsCredibilityThreshold(result.edges)
@@ -155,7 +164,7 @@ export default async function ResultsPage({
         {/* Section 3 — Narrative */}
         <NarrativeSection narrative={narrative} />
 
-        {/* Section 3 — Issue list */}
+        {/* Section 4 — Issue list */}
         <div className="mt-8">
           <div className="flex items-baseline gap-3 mb-4">
             <h2 className="text-base font-semibold text-slate-100">Issues Found</h2>

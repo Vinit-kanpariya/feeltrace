@@ -48,6 +48,14 @@ async function start(): Promise<void> {
     process.exit(1)
   }
 
+  // GROQ_API_KEY: must be present (used by the AI analysis pipeline in groq-client.ts)
+  // WR-02: Without this check the service starts successfully, runs the full browser crawl,
+  // then fails every job at the 'analyzing' stage with a Groq authentication error.
+  if (!process.env.GROQ_API_KEY) {
+    console.error('[feeltrace-crawler] Missing or invalid required env var: GROQ_API_KEY')
+    process.exit(1)
+  }
+
   // Step 1: Initialize the p-queue singleton before accepting any requests.
   // p-queue v9 is ESM-only — dynamic import must complete before the first /crawl arrives.
   await initQueue()
