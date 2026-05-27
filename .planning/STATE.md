@@ -5,7 +5,7 @@ milestone_name: Analysis Depth
 status: planning
 last_updated: "2026-05-27T00:00:00.000Z"
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -30,10 +30,10 @@ See: .planning/PROJECT.md (updated 2026-05-27)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: Not started — Phase 5 is next
 Plan: —
-Status: Defining requirements
-Last activity: 2026-05-27 — Milestone v1.1 started
+Status: Roadmap defined, ready to plan Phase 5
+Last activity: 2026-05-27 — Milestone v1.1 roadmap approved (4 phases)
 
 ---
 

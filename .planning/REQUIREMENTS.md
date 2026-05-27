@@ -60,18 +60,18 @@
 
 | REQ-ID | Phase | Plan |
 |--------|-------|------|
-| SIGNAL-01 | — | — |
-| SIGNAL-02 | — | — |
-| SIGNAL-03 | — | — |
-| SIGNAL-04 | — | — |
-| AI-01 | — | — |
-| AI-02 | — | — |
-| AI-03 | — | — |
-| AI-04 | — | — |
-| CRAWL-01 | — | — |
-| CRAWL-02 | — | — |
-| CRAWL-03 | — | — |
-| DEBT-01 | — | — |
-| DEBT-02 | — | — |
-| DEBT-03 | — | — |
-| DEBT-04 | — | — |
+| SIGNAL-01 | Phase 6 | — |
+| SIGNAL-02 | Phase 6 | — |
+| SIGNAL-03 | Phase 6 | — |
+| SIGNAL-04 | Phase 7 | — |
+| AI-01 | Phase 7 | — |
+| AI-02 | Phase 7 | — |
+| AI-03 | Phase 7 | — |
+| AI-04 | Phase 7 | — |
+| CRAWL-01 | Phase 8 | — |
+| CRAWL-02 | Phase 8 | — |
+| CRAWL-03 | Phase 8 | — |
+| DEBT-01 | Phase 5 | — |
+| DEBT-02 | Phase 5 | — |
+| DEBT-03 | Phase 5 | — |
+| DEBT-04 | Phase 5 | — |
