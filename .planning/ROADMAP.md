@@ -20,6 +20,11 @@ Four phases in dependency order: clean up v1.0 debt first (Phase 5), then expand
 **Goal:** Clean up v1.0 tech debt and stabilize interfaces before expanding signal coverage
 **Depends on:** Nothing (first phase of v1.1)
 **Requirements:** DEBT-01, DEBT-02, DEBT-03, DEBT-04
+**Plans:** 2 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Delete gemini.ts, remove @google/generative-ai dep, align TechProfile types
+- [ ] 05-02-PLAN.md — Failed-job error page branch, crawler startup env validation
 
 **Success criteria:**
 1. Running the crawler produces no dead Gemini import warnings or unused dependency installs
