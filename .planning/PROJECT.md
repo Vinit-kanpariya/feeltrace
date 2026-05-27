@@ -102,6 +102,22 @@ FeelTrace is a frontend UX intelligence platform. You paste a URL, FeelTrace cra
 | In-memory signals only | INFRA-03: raw signal payloads are ephemeral, never stored | ✓ Validated in v1.0 |
 | Causal edge mechanism non-nullable | Schema-level enforcement prevents correlation-only edges | ✓ Validated in v1.0 |
 
+## Current Milestone: v1.1 Analysis Depth
+
+**Goal:** Go deeper on analysis quality — richer signals, smarter AI reasoning, and multi-page crawl — while keeping the auth-free shareable-link model.
+
+**Target features:**
+- Core Web Vitals via CrUX (PageSpeed Insights API)
+- Accessibility scan with axe-core (WCAG violations)
+- Lighthouse scores as analysis grounding layer
+- Visual screenshot analysis via vision model
+- Actionable fix suggestions per issue
+- Severity justification tied to estimated user impact
+- Context-aware narrative with page-type detection
+- Comparative benchmarking vs industry baseline
+- Multi-page crawl: auto-discover internal links, crawl up to N pages, unified cross-page analysis
+- v1.0 tech debt cleanup (Gemini dead code, error pages, TechProfile types, startup validation)
+
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
@@ -113,4 +129,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-27 after v1.0 milestone*
+*Last updated: 2026-05-27 — v1.1 milestone started*
