@@ -108,6 +108,8 @@ export interface CrawlPass {
   // Only populated on desktop pass
   screenshot?: Buffer
   browserFingerprint?: BrowserFingerprint
+  // Populated by Plan 06-02 (axe accessibility scanner)
+  axeViolations?: AxeViolation[]
 }
 
 // Raw browser-context evaluation result — captured before page closes
@@ -124,6 +126,43 @@ export interface BrowserFingerprint {
   hasClerk: boolean
   hasAuth0: boolean
   hasPaddle: boolean
+}
+
+// SIG-05: Axe accessibility violation node (Plan 06-02 fills in scanner; types defined here)
+export interface AxeViolationNode {
+  target: string
+  failureSummary: string
+}
+
+// SIG-05: A single axe-core accessibility violation
+export interface AxeViolation {
+  id: string
+  impact: 'critical' | 'serious' | 'moderate' | 'minor'
+  description: string
+  helpUrl: string
+  nodes: AxeViolationNode[]
+}
+
+// SIG-06: Core Web Vitals from CrUX field data (PSI API)
+export interface CWVMetrics {
+  lcp_ms: number | null
+  cls_raw: number | null
+  inp_ms: number | null
+  origin_fallback: boolean
+}
+
+// SIG-07: Lighthouse category scores (PSI API)
+export interface LighthouseScores {
+  performance: number
+  accessibility: number
+  seo: number
+  bestPractices: number
+}
+
+// Aggregated external signals fetched from PageSpeed Insights API
+export interface ExternalSignals {
+  cwv: CWVMetrics | null
+  lighthouse: LighthouseScores | null
 }
 
 // Resolved tech + architecture profile derived from crawl signals
