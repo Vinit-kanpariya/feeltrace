@@ -1,9 +1,10 @@
 import { chromium, Browser, BrowserContext, Page } from 'playwright-core'
-import { CrawlPass } from './lib/types'
+import { BrowserFingerprint, CrawlPass, TechProfile } from './lib/types'
 import { extractDOMSignals } from './extractors/dom'
 import { extractCSSSignals } from './extractors/css'
 import { extractJSSignals } from './extractors/js'
 import { extractNetworkSignals } from './extractors/network'
+import { buildTechProfile } from './extractors/tech-detector'
 
 export function isPrivateHost(hostname: string): boolean {
   if (hostname === 'localhost' || hostname === '::1') return true
@@ -113,6 +114,47 @@ async function crawlWithViewport(
   const cssSignals = await extractCSSSignals(page) // internally calls stopCSSCoverage
   const jsSignals = await extractJSSignals(page)  // internally calls stopJSCoverage
 
+  // Desktop-only: capture screenshot + browser fingerprint before context closes
+  let screenshot: Buffer | undefined
+  let browserFingerprint: BrowserFingerprint | undefined
+  if (options.viewport === 'desktop') {
+    screenshot = await page.screenshot({ fullPage: false, type: 'jpeg', quality: 82 })
+      .then((buf) => { console.log(`[browser] Screenshot captured: ${buf.length} bytes`); return buf })
+      .catch((err: unknown) => { console.warn('[browser] Screenshot failed:', err instanceof Error ? err.message : err); return undefined })
+    browserFingerprint = await page.evaluate(() => {
+      const w = window as Window & {
+        __NEXT_DATA__?: unknown
+        __vue_app__?: unknown
+        __nuxt?: unknown
+        ___gatsby?: unknown
+        Stripe?: unknown
+        firebase?: unknown
+        supabase?: unknown
+        Clerk?: unknown
+        Auth0?: unknown
+        Paddle?: unknown
+      }
+      const root = document.getElementById('root') || document.getElementById('__next')
+      const hasReactRoot = root
+        ? Object.keys(root).some((k) => k.startsWith('__reactFiber') || k.startsWith('__reactContainer'))
+        : false
+      return {
+        hasNextData: !!w.__NEXT_DATA__,
+        hasVue: !!w.__vue_app__,
+        hasNuxt: !!w.__nuxt,
+        hasGatsby: !!w.___gatsby,
+        hasAngular: !!document.querySelector('[ng-version]'),
+        hasReactRoot,
+        hasStripe: !!w.Stripe,
+        hasFirebase: !!w.firebase,
+        hasSupabase: !!w.supabase,
+        hasClerk: !!w.Clerk,
+        hasAuth0: !!w.Auth0,
+        hasPaddle: !!w.Paddle,
+      }
+    }).catch(() => undefined)
+  }
+
   await context.close() // flushes HAR to disk (must happen after coverage stops)
 
   const networkSignals = await extractNetworkSignals(harPath) // reads flushed HAR
@@ -123,6 +165,8 @@ async function crawlWithViewport(
     cssSignals,
     jsSignals,
     networkSignals,
+    screenshot,
+    browserFingerprint,
   }
 }
 
@@ -136,7 +180,7 @@ const MOBILE_THROTTLE: ThrottleOptions = {
 export async function runDualViewportCrawl(
   url: string,
   jobId?: string
-): Promise<{ mobile: CrawlPass; desktop: CrawlPass }> {
+): Promise<{ mobile: CrawlPass; desktop: CrawlPass; screenshot: Buffer | null; techProfile: TechProfile }> {
   const browser: Browser = await chromium.launch({
     args: ['--disable-dev-shm-usage', '--disable-gpu'],
     // NOTE: --no-sandbox is intentionally omitted (Pitfall 7 / T-02-20)
@@ -171,7 +215,18 @@ export async function runDualViewportCrawl(
       jobId
     )
 
-    return { mobile, desktop }
+    const techProfile = buildTechProfile(
+      desktop.browserFingerprint,
+      desktop.jsSignals,
+      desktop.networkSignals,
+    )
+
+    return {
+      mobile,
+      desktop,
+      screenshot: desktop.screenshot ?? null,
+      techProfile,
+    }
   } finally {
     await browser.close()
   }

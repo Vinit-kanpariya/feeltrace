@@ -65,7 +65,7 @@ describe('buildGraphData', () => {
     expect(rfEdges).toHaveLength(1)
   })
 
-  it('places cause node at x=0 and effect node at x=320', () => {
+  it('places root node at depth 0 (x=0) and effect node at depth 1 (x=250)', () => {
     const issues: TestIssue[] = [
       { id: 'issue-1', category: 'perceived-perf', technical_description: 'Slow LCP', severity: 3 },
       { id: 'issue-2', category: 'technical-perf', technical_description: 'Blocking scripts', severity: 2 },
@@ -74,13 +74,13 @@ describe('buildGraphData', () => {
       { id: 'edge-1', fromIssueId: 'issue-1', toIssueId: 'issue-2', confidence: 'high', mechanism: 'render-blocking' },
     ]
     const { nodes } = buildGraphData(issues, edges)
-    const causeNode = nodes.find(n => n.id === 'issue-1')
-    const effectNode = nodes.find(n => n.id === 'issue-2')
-    expect(causeNode?.position.x).toBe(0)
-    expect(effectNode?.position.x).toBe(320)
+    const rootNode = nodes.find(n => n.id === 'issue-1')
+    const leafNode = nodes.find(n => n.id === 'issue-2')
+    expect(rootNode?.position.x).toBe(0)   // depth 0 → x = 0 * 250
+    expect(leafNode?.position.x).toBe(250)  // depth 1 → x = 1 * 250
   })
 
-  it('sets edge label to the mechanism field from the CausalEdge', () => {
+  it('sets edge label to the mechanism with hyphens replaced by spaces', () => {
     const issues: TestIssue[] = [
       { id: 'issue-1', category: 'perceived-perf', technical_description: 'Slow LCP', severity: 3 },
       { id: 'issue-2', category: 'technical-perf', technical_description: 'Blocking scripts', severity: 2 },
@@ -89,6 +89,6 @@ describe('buildGraphData', () => {
       { id: 'edge-1', fromIssueId: 'issue-1', toIssueId: 'issue-2', confidence: 'high', mechanism: 'render-blocking' },
     ]
     const { edges: rfEdges } = buildGraphData(issues, edges)
-    expect(rfEdges[0].label).toBe('render-blocking')
+    expect(rfEdges[0].label).toBe('render blocking')
   })
 })

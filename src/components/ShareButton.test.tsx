@@ -46,7 +46,7 @@ describe('ShareButton', () => {
     expect(screen.getByText('Link copied')).toBeDefined()
   })
 
-  it('reverts to "Copy share link" after 2000ms', async () => {
+  it('reverts to "Copy link" after 2000ms', async () => {
     render(<ShareButton />)
     const button = screen.getByRole('button')
     await act(async () => {
@@ -57,6 +57,6 @@ describe('ShareButton', () => {
     await act(async () => {
       vi.advanceTimersByTime(2000)
     })
-    expect(screen.getByText('Copy share link')).toBeDefined()
+    expect(screen.getByText('Copy link')).toBeDefined()
   })
 })

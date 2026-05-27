@@ -36,13 +36,15 @@ model Job {
 }
 
 model Result {
-  id         String       @id @default(cuid())
-  jobId      String       @unique
-  job        Job          @relation(fields: [jobId], references: [id])
-  narrative  Json
-  issues     Issue[]
-  edges      CausalEdge[]
-  created_at DateTime     @default(now())
+  id             String       @id @default(cuid())
+  jobId          String       @unique
+  job            Job          @relation(fields: [jobId], references: [id])
+  narrative      Json
+  screenshot_url String?
+  tech_stack     Json?
+  issues         Issue[]
+  edges          CausalEdge[]
+  created_at     DateTime     @default(now())
 }
 
 model Issue {

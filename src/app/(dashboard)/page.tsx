@@ -20,7 +20,7 @@ export default function HomePage() {
 
       {/* Hero */}
       <main className="flex-1 flex flex-col items-center justify-center px-6 py-10">
-        <div className="w-full max-w-lg">
+        <div className="w-full max-w-2xl">
           {/* Live badge */}
           <div className="flex justify-center mb-6">
             <span className="inline-flex items-center gap-2 text-xs font-medium text-green-400 bg-green-500/10 border border-green-500/20 px-3 py-1.5 rounded-full">

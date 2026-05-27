@@ -22,7 +22,7 @@ export async function processJob(jobId: string, url: string): Promise<void> {
     await prisma.job.update({ where: { id: jobId }, data: { status: 'crawling' } })
 
     // D-28: 55-second SLA timeout wrapping the dual viewport crawl
-    const { mobile, desktop } = await Promise.race([
+    const { mobile, desktop, screenshot, techProfile } = await Promise.race([
       runDualViewportCrawl(url, jobId),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('SLA exceeded: crawl timed out after 55s')), SLA_MS)
@@ -38,7 +38,7 @@ export async function processJob(jobId: string, url: string): Promise<void> {
     await prisma.job.update({ where: { id: jobId }, data: { status: 'analyzing' } })
 
     // Phase 3: AI pipeline — scoreSignals → LLM reasoning → LLM narration → DB write
-    await runAIPipeline(jobId, signals)
+    await runAIPipeline(jobId, signals, screenshot, techProfile)
 
     await prisma.job.update({ where: { id: jobId }, data: { status: 'complete' } })
     console.log(`[processor] Job ${jobId} completed in ${Date.now() - startedAt}ms`)

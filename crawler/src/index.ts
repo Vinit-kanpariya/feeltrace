@@ -2,10 +2,19 @@
 // Service entry point — initializes the p-queue and starts the Hono HTTP server.
 //
 // Startup order matters:
-//   1. initQueue() — loads p-queue (ESM-only) via dynamic import before requests arrive
-//   2. serve()     — binds the Hono app to the PORT Railway injects
+//   1. dotenv    — load .env (crawler-local) then root .env.local for local dev
+//   2. initQueue() — loads p-queue (ESM-only) via dynamic import before requests arrive
+//   3. serve()     — binds the Hono app to the PORT Railway injects
 //
 // Railway injects PORT automatically at runtime. Default 3000 for local development.
+
+import { config as loadEnv } from 'dotenv'
+import { resolve } from 'path'
+
+// Load crawler/.env first (Railway/prod overrides stay in process.env, dotenv won't clobber them).
+// Then fall back to the root project's .env.local so local dev works without duplicating secrets.
+loadEnv({ path: resolve(__dirname, '../.env') })          // crawler/.env  (optional)
+loadEnv({ path: resolve(__dirname, '../../.env.local') }) // root .env.local (local dev)
 
 import { serve } from '@hono/node-server'
 import app from './server'

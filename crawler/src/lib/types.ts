@@ -105,4 +105,47 @@ export interface CrawlPass {
   cssSignals: CSSSignals
   jsSignals: JSSignals
   networkSignals: NetworkSignals
+  // Only populated on desktop pass
+  screenshot?: Buffer
+  browserFingerprint?: BrowserFingerprint
+}
+
+// Raw browser-context evaluation result — captured before page closes
+export interface BrowserFingerprint {
+  hasNextData: boolean
+  hasVue: boolean
+  hasNuxt: boolean
+  hasGatsby: boolean
+  hasAngular: boolean
+  hasReactRoot: boolean
+  hasStripe: boolean
+  hasFirebase: boolean
+  hasSupabase: boolean
+  hasClerk: boolean
+  hasAuth0: boolean
+  hasPaddle: boolean
+}
+
+// Resolved tech + architecture profile derived from crawl signals
+export interface TechProfile {
+  // Frontend stack
+  framework: string | null       // "Next.js", "React", "Vue", "WordPress", etc.
+  rendering: string              // "SSR" | "SSG" | "SPA" | "MPA" | "unknown"
+  cdn: string | null             // "Cloudflare", "Vercel Edge", "Fastly", etc.
+  hosting: string | null         // "Vercel", "Netlify", "Cloudflare Pages", etc.
+  buildTool: string | null       // "Next.js (Webpack)", "Vite", "Parcel", etc.
+  cssFramework: string | null    // "Tailwind CSS", "Bootstrap", "Material UI", etc.
+  analytics: string[]            // ["Google Analytics", "Hotjar", ...]
+  // Backend + data layer
+  database: string | null        // "Supabase", "Firebase Firestore", "PlanetScale", etc.
+  auth: string | null            // "Auth0", "Clerk", "Firebase Auth", etc.
+  payments: string | null        // "Stripe", "PayPal", "Braintree", etc.
+  services: string[]             // email, maps, search, realtime, media, monitoring, etc.
+  // Architecture metrics
+  totalJsBundleKb: number        // sum of all JS transfer bytes
+  totalPageWeightKb: number      // total transfer size across all requests
+  totalRequests: number          // total HTTP request count
+  renderBlockingCount: number    // render-blocking scripts/stylesheets count
+  thirdPartyScriptCount: number  // scripts loaded from third-party origins
+  unusedJsPercent: number        // % of JS bytes unused (V8 coverage)
 }

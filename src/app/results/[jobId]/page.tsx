@@ -10,15 +10,40 @@
 //   NarrativeResult cast via unknown (STATE.md locked decision)
 //   XSS prevention: all DB content rendered as JSX text children (T-04-10)
 
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import type { NarrativeResult } from '@/types/narrative'
+import type { TechProfile } from '@/types/tech'
 import { meetsCredibilityThreshold, buildGraphData } from '@/lib/graph-utils'
 import { NarrativeSection } from '@/components/NarrativeSection'
 import { IssueCard } from '@/components/IssueCard'
 import { CausalityGraph } from '@/components/CausalityGraph'
 import { GraphAbsent } from '@/components/GraphAbsent'
 import { ShareButton } from '@/components/ShareButton'
+import { ScreenshotPreview } from '@/components/ScreenshotPreview'
+import { TechStackSection } from '@/components/TechStackSection'
+
+function ResultsHeader() {
+  return (
+    <header className="w-full max-w-4xl mx-auto px-6 py-5 flex items-center justify-between">
+      <Link href="/" className="flex items-center gap-2.5">
+        <div className="w-7 h-7 rounded-lg bg-green-500 flex items-center justify-center shrink-0">
+          <svg className="w-4 h-4 text-slate-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+        </div>
+        <span className="font-semibold text-slate-100 text-[15px] tracking-tight">FeelTrace</span>
+      </Link>
+      <Link
+        href="/"
+        className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+      >
+        ← New analysis
+      </Link>
+    </header>
+  )
+}
 
 export default async function ResultsPage({
   params,
@@ -45,19 +70,24 @@ export default async function ResultsPage({
   // D-06: Failed analysis — render inline error section (HTTP 200)
   if (result.job.status === 'failed' || result.job.error_message) {
     return (
-      <main className="max-w-4xl mx-auto px-4 py-12">
-        <h2 className="text-2xl font-semibold">Analysis failed</h2>
-        <p className="mt-4 text-base">
-          Something went wrong processing this URL.{' '}
-          {result.job.error_message ?? 'Please submit the URL again from the home page.'}
-        </p>
-      </main>
+      <div className="min-h-dvh bg-[#0f172a] flex flex-col">
+        <ResultsHeader />
+        <main className="flex-1 max-w-4xl mx-auto w-full px-6 py-12">
+          <div className="rounded-xl bg-red-950/40 border border-red-800/50 p-6">
+            <p className="text-sm font-semibold text-red-300 mb-1.5">Analysis failed</p>
+            <p className="text-sm text-red-400">
+              {result.job.error_message ?? 'Something went wrong. Please submit the URL again from the home page.'}
+            </p>
+          </div>
+        </main>
+      </div>
     )
   }
 
   // Cast narrative: Result.narrative is Prisma Json — double-cast via unknown is safe
   // (STATE.md key decision: "NarrativeResult cast via unknown for Prisma Json type")
   const narrative = result.narrative as unknown as NarrativeResult
+  const techProfile = result.tech_stack ? (result.tech_stack as unknown as TechProfile) : null
 
   // Extract hostname for page title (UI-SPEC copywriting: "UX Analysis: {hostname}")
   const hostname = new URL(result.job.url).hostname
@@ -76,53 +106,84 @@ export default async function ResultsPage({
       : `${issueCount} issues ranked by UX impact`
 
   return (
-    <main className="max-w-4xl mx-auto px-4 py-12">
-      {/* Section 1 — Header row: page title + ShareButton */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-semibold">UX Analysis: {hostname}</h1>
-        <ShareButton />
-      </div>
+    <div className="min-h-dvh bg-[#0f172a] flex flex-col">
+      <ResultsHeader />
 
-      {/* Section 2 — NarrativeSection (above the fold — primary output) */}
-      <div className="mt-8">
-        <NarrativeSection narrative={narrative} />
-      </div>
-
-      {/* Section 3 — Issue list */}
-      <div className="mt-8">
-        <h2 className="text-2xl font-semibold mb-1">Issues Found</h2>
-        <p className="text-sm text-zinc-500 mb-4">{issueLabel}</p>
-        {result.issues.length === 0 ? (
-          <div className="bg-zinc-100 rounded-lg p-6">
-            <h3 className="text-xl font-semibold">No issues detected</h3>
-            <p className="mt-2 text-base">
-              This page passed all signal thresholds. Review the narrative summary for qualitative
-              observations.
-            </p>
+      <main className="flex-1 max-w-4xl mx-auto w-full px-6 py-10">
+        {/* Section 1 — Page title + ShareButton */}
+        <div className="flex items-start justify-between gap-4 mb-8">
+          <div>
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">UX Analysis</p>
+            <h1 className="text-2xl font-bold text-slate-100 tracking-tight">{hostname}</h1>
           </div>
-        ) : (
-          result.issues.map((issue: {
-            id: string
-            category: string
-            signal_source: string
-            severity: number
-            raw_evidence: string
-            technical_description: string
-          }) => <IssueCard key={issue.id} issue={issue} />)
-        )}
-      </div>
+          <div className="mt-1 shrink-0">
+            <ShareButton />
+          </div>
+        </div>
 
-      {/* Section 4 — CausalityGraph or GraphAbsent */}
-      <div className="mt-8">
-        {showGraph ? (
-          <>
-            <h2 className="text-2xl font-semibold mb-4">Why these issues are connected</h2>
-            <CausalityGraph nodes={nodes} edges={graphEdges} />
-          </>
-        ) : (
-          <GraphAbsent />
+        {/* Section 2 — Screenshot (when available) */}
+        {result.screenshot_url && (
+          <div className="mb-8">
+            <ScreenshotPreview url={result.job.url} screenshotUrl={`/api/screenshot/${jobId}`} />
+          </div>
         )}
-      </div>
-    </main>
+
+        {/* Section 3 — Narrative */}
+        <NarrativeSection narrative={narrative} />
+
+        {/* Section 3 — Issue list */}
+        <div className="mt-8">
+          <div className="flex items-baseline gap-3 mb-4">
+            <h2 className="text-base font-semibold text-slate-100">Issues Found</h2>
+            <span className="text-xs text-slate-500">{issueLabel}</span>
+          </div>
+          {result.issues.length === 0 ? (
+            <div className="rounded-xl bg-slate-800/30 border border-slate-700/40 border-dashed p-6">
+              <p className="text-sm font-semibold text-slate-300 mb-1">No issues detected</p>
+              <p className="text-sm text-slate-500">
+                This page passed all signal thresholds. Review the narrative summary for qualitative observations.
+              </p>
+            </div>
+          ) : (
+            result.issues.map((issue: {
+              id: string
+              category: string
+              signal_source: string
+              severity: number
+              raw_evidence: string
+              technical_description: string
+            }) => <IssueCard key={issue.id} issue={issue} />)
+          )}
+        </div>
+
+        {/* Section 5 — Tech stack (when available) */}
+        {techProfile && (
+          <div className="mt-8">
+            <TechStackSection tech={techProfile} />
+          </div>
+        )}
+
+        {/* Section 6 — Causality graph */}
+        <div className="mt-8">
+          {showGraph ? (
+            <>
+              <h2 className="text-base font-semibold text-slate-100 mb-1">Why these issues are connected</h2>
+              <p className="text-sm text-slate-500 mb-4">
+                Red nodes are root causes; orange nodes are downstream effects. Arrows show the causal chain.
+              </p>
+              <CausalityGraph nodes={nodes} edges={graphEdges} />
+            </>
+          ) : (
+            <GraphAbsent />
+          )}
+        </div>
+      </main>
+
+      <footer className="px-6 py-5 border-t border-slate-800/80">
+        <p className="text-center text-xs text-slate-600">
+          © {new Date().getFullYear()} FeelTrace — UX signal analysis for product teams
+        </p>
+      </footer>
+    </div>
   )
 }

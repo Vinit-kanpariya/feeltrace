@@ -1,7 +1,7 @@
 // src/lib/graph-utils.ts
 // Pure graph computation utilities for the CausalityGraph component.
 // Credibility threshold (UI-SPEC): edges.length >= 2 AND at least 1 edge has confidence='high'.
-// Node colors (UI-SPEC): cause nodes = red-50/red-600, effect nodes = orange-50/orange-600.
+// Node roles: root (no incoming edges) = red, middle (both) = amber, leaf (no outgoing edges) = orange.
 
 import type { Node, Edge } from '@xyflow/react'
 
@@ -29,8 +29,8 @@ export function meetsCredibilityThreshold(edges: CausalEdgeLike[]): boolean {
 
 /**
  * Converts DB issues and causal edges into React Flow nodes and edges.
- * Only issues that appear as a cause or effect are included.
- * Cause nodes are positioned at x=0; effect nodes at x=320.
+ * Uses topological depth layout so nodes flow left-to-right by causal order.
+ * Root causes (no incoming edges) sit leftmost; leaf effects rightmost.
  */
 export function buildGraphData(
   issues: IssueLike[],
@@ -38,32 +38,78 @@ export function buildGraphData(
 ): { nodes: Node[]; edges: Edge[] } {
   const causeIds = new Set(edges.map(e => e.fromIssueId))
   const effectIds = new Set(edges.map(e => e.toIssueId))
+  const involvedIds = new Set([...causeIds, ...effectIds])
 
-  let causeY = 0
-  let effectY = 0
+  const involvedIssues = issues.filter(i => involvedIds.has(i.id))
 
-  const nodes: Node[] = issues
-    .filter(i => causeIds.has(i.id) || effectIds.has(i.id))
-    .map(issue => {
-      const isCause = causeIds.has(issue.id)
-      const x = isCause ? 0 : 320
-      const y = isCause ? (causeY += 120) - 120 : (effectY += 120) - 120
-      return {
-        id: issue.id,
-        position: { x, y },
-        data: { label: issue.category },
-        style: isCause
-          ? { background: '#fef2f2', border: '1px solid #dc2626', color: '#171717' }
-          : { background: '#fff7ed', border: '1px solid #ea580c', color: '#171717' },
-      }
-    })
+  // Build parent map for topological depth: nodeId → list of parent nodeIds
+  const parents = new Map<string, string[]>()
+  for (const issue of involvedIssues) parents.set(issue.id, [])
+  for (const edge of edges) parents.get(edge.toIssueId)?.push(edge.fromIssueId)
+
+  // Longest path from any root (with cycle guard)
+  const depthCache = new Map<string, number>()
+  function computeDepth(id: string, visiting: Set<string>): number {
+    if (depthCache.has(id)) return depthCache.get(id)!
+    if (visiting.has(id)) return 0
+    visiting.add(id)
+    const pList = parents.get(id) ?? []
+    const d = pList.length === 0
+      ? 0
+      : Math.max(...pList.map(p => computeDepth(p, new Set(visiting)) + 1))
+    depthCache.set(id, d)
+    return d
+  }
+  for (const issue of involvedIssues) computeDepth(issue.id, new Set())
+
+  // Group issues by depth level
+  const byDepth = new Map<number, IssueLike[]>()
+  for (const issue of involvedIssues) {
+    const d = depthCache.get(issue.id) ?? 0
+    if (!byDepth.has(d)) byDepth.set(d, [])
+    byDepth.get(d)!.push(issue)
+  }
+
+  const X_GAP = 250
+  const Y_GAP = 130
+  const NODE_WIDTH = 200
+
+  const nodes: Node[] = involvedIssues.map(issue => {
+    const d = depthCache.get(issue.id) ?? 0
+    const group = byDepth.get(d)!
+    const idx = group.indexOf(issue)
+    const groupHeight = (group.length - 1) * Y_GAP
+
+    const role: 'root' | 'middle' | 'leaf' =
+      !effectIds.has(issue.id) ? 'root' :
+      !causeIds.has(issue.id) ? 'leaf' : 'middle'
+
+    return {
+      id: issue.id,
+      type: 'issueNode',
+      position: {
+        x: d * X_GAP,
+        y: idx * Y_GAP - groupHeight / 2,
+      },
+      data: {
+        label: issue.category,
+        description: issue.technical_description.slice(0, 110),
+        role,
+      },
+      style: { width: NODE_WIDTH },
+    }
+  })
 
   const rfEdges: Edge[] = edges.map(e => ({
     id: e.id,
     source: e.fromIssueId,
     target: e.toIssueId,
-    label: e.mechanism,
-    style: { stroke: '#6b7280' },
+    label: e.mechanism.replace(/-/g, ' '),
+    labelStyle: { fill: '#94a3b8', fontSize: 10 },
+    labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 },
+    labelBgPadding: [4, 3] as [number, number],
+    style: { stroke: '#475569', strokeWidth: 1.5 },
+    markerEnd: { type: 'arrowclosed' as const, color: '#475569', width: 14, height: 14 },
   }))
 
   return { nodes, edges: rfEdges }

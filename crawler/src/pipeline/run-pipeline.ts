@@ -1,12 +1,13 @@
 // Pipeline orchestrator: sequences Stage 1 (scoring) → Stage 2 (LLM reasoning) →
 // Stage 3 (LLM narration) → atomic Prisma DB write (Result + Issues + CausalEdges).
 // Source: .planning/phases/03-ai-pipeline/03-RESEARCH.md Pattern 6
+import { put } from '@vercel/blob'
 import { prisma } from '../lib/prisma'
 import { getGroqClient } from '../lib/groq-client'
 import { scoreSignals } from './stage1-scorer'
 import { runStage2Reasoning } from './stage2-reasoner'
 import { runStage3Narration } from './stage3-narrator'
-import type { CrawlPass } from '../lib/types'
+import type { CrawlPass, TechProfile } from '../lib/types'
 
 /**
  * Runs the full AI pipeline for a crawl job:
@@ -17,13 +18,38 @@ import type { CrawlPass } from '../lib/types'
  *
  * No try/catch here — processor.ts outer catch handles job failure status update.
  */
+async function uploadScreenshot(jobId: string, screenshot: Buffer): Promise<string | null> {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    console.warn(`[pipeline] Job ${jobId}: BLOB_READ_WRITE_TOKEN not set — skipping screenshot upload`)
+    return null
+  }
+  try {
+    console.log(`[pipeline] Job ${jobId}: uploading screenshot (${screenshot.length} bytes)…`)
+    const { url } = await put(`screenshots/${jobId}.jpg`, screenshot, {
+      access: 'private',
+      contentType: 'image/jpeg',
+    })
+    console.log(`[pipeline] Job ${jobId}: screenshot uploaded → ${url}`)
+    return url
+  } catch (err) {
+    console.warn(`[pipeline] Job ${jobId}: screenshot upload failed —`, err instanceof Error ? err.message : err)
+    return null
+  }
+}
+
 export async function runAIPipeline(
   jobId: string,
   signals: { mobile: CrawlPass; desktop: CrawlPass },
+  screenshot: Buffer | null,
+  techProfile: TechProfile,
 ): Promise<void> {
   // Stage 1: deterministic scoring — no LLM, pure threshold rules
   const scoredIssues = scoreSignals(signals.mobile, signals.desktop)
   console.log(`[pipeline] Job ${jobId}: ${scoredIssues.length} issues scored`)
+
+  // Upload screenshot to Vercel Blob (non-blocking — proceeds even if upload fails)
+  const screenshotUrl = screenshot ? await uploadScreenshot(jobId, screenshot) : null
+  const techStackJson = techProfile as unknown as Parameters<typeof prisma.result.create>[0]['data']['tech_stack']
 
   // Zero-issues path: skip Stage 2 + Stage 3 API calls entirely to avoid unnecessary spend
   if (scoredIssues.length === 0) {
@@ -36,6 +62,8 @@ export async function runAIPipeline(
           technicalPerformance: '',
           recommendations: [],
         },
+        screenshot_url: screenshotUrl,
+        tech_stack: techStackJson,
       },
     })
     console.log(`[pipeline] Job ${jobId}: no issues — wrote empty result`)
@@ -64,6 +92,8 @@ export async function runAIPipeline(
       data: {
         jobId,
         narrative: narrativeJson,
+        screenshot_url: screenshotUrl,
+        tech_stack: techStackJson,
         issues: {
           create: enrichedIssues.map((issue) => ({
             category: issue.category,
