@@ -56,6 +56,8 @@ async function start(): Promise<void> {
     process.exit(1)
   }
 
+  console.log('[feeltrace-crawler] Crawler URL:', process.env.RAILWAY_CRAWLER_URL)
+
   // Step 1: Initialize the p-queue singleton before accepting any requests.
   // p-queue v9 is ESM-only — dynamic import must complete before the first /crawl arrives.
   await initQueue()
