@@ -39,6 +39,12 @@ Plans:
 **Goal:** Add Core Web Vitals, accessibility, and Lighthouse data to the crawler's signal payload
 **Depends on:** Phase 5 (TechProfile types must be stable)
 **Requirements:** SIGNAL-01, SIGNAL-02, SIGNAL-03
+**Plans:** 3 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — PSI API integration: CWV (SIGNAL-01) + Lighthouse scores (SIGNAL-03), parallel execution, stage1-external-scorer
+- [ ] 06-02-PLAN.md — axe-core WCAG 2.1 scan in Playwright desktop pass (SIGNAL-02)
+- [ ] 06-03-PLAN.md — Pipeline wiring, integration test, full typecheck + test suite
 
 **Success criteria:**
 1. Analysis result includes real-user CWV field data (LCP, CLS, INP) for URLs with CrUX coverage; graceful fallback when CrUX has no data
