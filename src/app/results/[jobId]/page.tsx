@@ -64,8 +64,32 @@ export default async function ResultsPage({
     },
   })
 
-  // D-05: No Result record for this jobId — return 404 via not-found.tsx
-  if (!result) notFound()
+  // D-05: No Result record for this jobId — query Job before calling notFound()
+  if (!result) {
+    // Second query: check if a Job record exists for this jobId (failed jobs may lack a Result)
+    const job = await prisma.job.findUnique({ where: { id: jobId } })
+
+    // No Job record either — unknown jobId, return 404 via not-found.tsx
+    if (!job) notFound()
+
+    // Job exists but failed — render red error card (HTTP 200)
+    return (
+      <div className="min-h-dvh bg-[#0f172a] flex flex-col">
+        <ResultsHeader />
+        <main className="flex-1 max-w-4xl mx-auto w-full px-6 py-12">
+          <div className="rounded-xl bg-red-950/40 border border-red-800/50 p-6">
+            <p className="text-sm font-semibold text-red-300 mb-1.5">Analysis failed</p>
+            <p className="text-sm text-red-400">
+              {job.error_message ?? 'Analysis failed — try submitting again'}
+            </p>
+            <Link href="/" className="inline-block mt-4 text-sm text-red-300 hover:text-red-200 transition-colors">
+              ← Try again
+            </Link>
+          </div>
+        </main>
+      </div>
+    )
+  }
 
   // D-06: Failed analysis — render inline error section (HTTP 200)
   if (result.job.status === 'failed' || result.job.error_message) {
