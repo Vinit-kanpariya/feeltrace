@@ -1,5 +1,6 @@
 import { chromium, Browser, BrowserContext, Page } from 'playwright-core'
-import { BrowserFingerprint, CrawlPass, TechProfile } from './lib/types'
+import { AxeBuilder } from '@axe-core/playwright'
+import { BrowserFingerprint, CrawlPass, TechProfile, AxeViolation } from './lib/types'
 import { extractDOMSignals } from './extractors/dom'
 import { extractCSSSignals } from './extractors/css'
 import { extractJSSignals } from './extractors/js'
@@ -75,6 +76,9 @@ async function crawlWithViewport(
     isMobile: options.isMobile,
     hasTouch: options.hasTouch,
     recordHar: { path: harPath, content: 'omit', mode: 'full' },
+    // bypassCSP allows axe-core's injected script to run on pages with strict CSP headers.
+    // Desktop-only — mobile pass never runs axe, so no need to bypass CSP there.
+    ...(options.viewport === 'desktop' ? { bypassCSP: true } : {}),
   })
 
   const page = await context.newPage()
@@ -109,6 +113,29 @@ async function crawlWithViewport(
 
   await page.goto(url, { timeout: 40_000, waitUntil: 'domcontentloaded' })
   await waitForSpaHydration(page, 10_000)
+
+  // Axe WCAG 2.1 A + AA scan — desktop pass only (bypassCSP is set on this context)
+  let axeViolations: AxeViolation[] | undefined
+  if (options.viewport === 'desktop') {
+    try {
+      const axeResults = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag21aa'])  // WCAG 2.1 A + AA — matches SC-2 requirement
+        .analyze()
+      axeViolations = axeResults.violations.map((v) => ({
+        id: v.id,
+        impact: (v.impact ?? 'minor') as AxeViolation['impact'],
+        description: v.description,
+        helpUrl: v.helpUrl,
+        nodes: v.nodes.slice(0, 5).map((n) => ({
+          target: n.target.join(', '),
+          failureSummary: n.failureSummary ?? '',
+        })),
+      }))
+    } catch (axeErr) {
+      console.warn('[browser] axe scan failed:', axeErr instanceof Error ? axeErr.message : axeErr)
+      axeViolations = []
+    }
+  }
 
   const domSignals = await extractDOMSignals(page)
   const cssSignals = await extractCSSSignals(page) // internally calls stopCSSCoverage
@@ -167,6 +194,7 @@ async function crawlWithViewport(
     networkSignals,
     screenshot,
     browserFingerprint,
+    axeViolations,
   }
 }
 
