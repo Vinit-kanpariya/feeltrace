@@ -21,6 +21,33 @@ import app from './server'
 import { initQueue } from './queue'
 
 async function start(): Promise<void> {
+  // Step 0: Validate required env vars before doing anything else.
+  // Fail fast with a named-variable error so misconfiguration is immediately actionable.
+
+  // RAILWAY_CRAWLER_URL: must be present AND a valid URL (used by QStash signature verify)
+  if (!process.env.RAILWAY_CRAWLER_URL) {
+    console.error('[feeltrace-crawler] Missing or invalid required env var: RAILWAY_CRAWLER_URL')
+    process.exit(1)
+  }
+  try {
+    new URL(process.env.RAILWAY_CRAWLER_URL)
+  } catch {
+    console.error('[feeltrace-crawler] Missing or invalid required env var: RAILWAY_CRAWLER_URL')
+    process.exit(1)
+  }
+
+  // QSTASH_CURRENT_SIGNING_KEY: must be present (used by QStash Receiver)
+  if (!process.env.QSTASH_CURRENT_SIGNING_KEY) {
+    console.error('[feeltrace-crawler] Missing or invalid required env var: QSTASH_CURRENT_SIGNING_KEY')
+    process.exit(1)
+  }
+
+  // QSTASH_NEXT_SIGNING_KEY: must be present (used by QStash Receiver for key rotation)
+  if (!process.env.QSTASH_NEXT_SIGNING_KEY) {
+    console.error('[feeltrace-crawler] Missing or invalid required env var: QSTASH_NEXT_SIGNING_KEY')
+    process.exit(1)
+  }
+
   // Step 1: Initialize the p-queue singleton before accepting any requests.
   // p-queue v9 is ESM-only — dynamic import must complete before the first /crawl arrives.
   await initQueue()
