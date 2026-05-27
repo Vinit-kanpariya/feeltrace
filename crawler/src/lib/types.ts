@@ -137,10 +137,10 @@ export interface TechProfile {
   cssFramework: string | null    // "Tailwind CSS", "Bootstrap", "Material UI", etc.
   analytics: string[]            // ["Google Analytics", "Hotjar", ...]
   // Backend + data layer
-  database: string | null        // "Supabase", "Firebase Firestore", "PlanetScale", etc.
-  auth: string | null            // "Auth0", "Clerk", "Firebase Auth", etc.
-  payments: string | null        // "Stripe", "PayPal", "Braintree", etc.
-  services: string[]             // email, maps, search, realtime, media, monitoring, etc.
+  database?: string | null       // "Supabase", "Firebase Firestore", "PlanetScale", etc.
+  auth?: string | null           // "Auth0", "Clerk", "Firebase Auth", etc.
+  payments?: string | null       // "Stripe", "PayPal", "Braintree", etc.
+  services?: string[]            // email, maps, search, realtime, media, monitoring, etc.
   // Architecture metrics
   totalJsBundleKb: number        // sum of all JS transfer bytes
   totalPageWeightKb: number      // total transfer size across all requests
