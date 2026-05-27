@@ -1,6 +1,7 @@
 import { prisma } from './lib/prisma'
 import { runDualViewportCrawl } from './browser'
 import { runAIPipeline } from './pipeline/run-pipeline'
+import { fetchPSISignals } from './lib/psi'
 
 const SLA_MS = 55_000 // D-28: 55s budget, 5s headroom from 60s job SLA
 
@@ -21,13 +22,19 @@ export async function processJob(jobId: string, url: string): Promise<void> {
   try {
     await prisma.job.update({ where: { id: jobId }, data: { status: 'crawling' } })
 
-    // D-28: 55-second SLA timeout wrapping the dual viewport crawl
-    const { mobile, desktop, screenshot, techProfile } = await Promise.race([
-      runDualViewportCrawl(url, jobId),
+    // D-28: 55-second SLA timeout wrapping the dual viewport crawl + PSI fetch in parallel.
+    // Two-step destructuring: first unpack the race result, then unpack crawlResult fields.
+    // TypeScript cannot infer nested tuple type through Promise.race overload in one step.
+    const [crawlResult, psiResult] = await Promise.race([
+      Promise.all([
+        runDualViewportCrawl(url, jobId),
+        fetchPSISignals(url, 30_000),
+      ]),
       new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('SLA exceeded: crawl timed out after 55s')), SLA_MS)
+        setTimeout(() => reject(new Error('SLA exceeded after 55s')), SLA_MS)
       ),
     ])
+    const { mobile, desktop, screenshot, techProfile } = crawlResult
 
     await prisma.job.update({ where: { id: jobId }, data: { status: 'extracting' } })
 
@@ -38,7 +45,7 @@ export async function processJob(jobId: string, url: string): Promise<void> {
     await prisma.job.update({ where: { id: jobId }, data: { status: 'analyzing' } })
 
     // Phase 3: AI pipeline — scoreSignals → LLM reasoning → LLM narration → DB write
-    await runAIPipeline(jobId, signals, screenshot, techProfile)
+    await runAIPipeline(jobId, signals, screenshot, techProfile, psiResult)
 
     await prisma.job.update({ where: { id: jobId }, data: { status: 'complete' } })
     console.log(`[processor] Job ${jobId} completed in ${Date.now() - startedAt}ms`)

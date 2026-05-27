@@ -5,9 +5,10 @@ import { put } from '@vercel/blob'
 import { prisma } from '../lib/prisma'
 import { getGroqClient } from '../lib/groq-client'
 import { scoreSignals } from './stage1-scorer'
+import { scoreExternalSignals } from './stage1-external-scorer'
 import { runStage2Reasoning } from './stage2-reasoner'
 import { runStage3Narration } from './stage3-narrator'
-import type { CrawlPass, TechProfile } from '../lib/types'
+import type { CrawlPass, TechProfile, ExternalSignals } from '../lib/types'
 
 /**
  * Runs the full AI pipeline for a crawl job:
@@ -42,14 +43,26 @@ export async function runAIPipeline(
   signals: { mobile: CrawlPass; desktop: CrawlPass },
   screenshot: Buffer | null,
   techProfile: TechProfile,
+  externalSignals: ExternalSignals | null,
 ): Promise<void> {
   // Stage 1: deterministic scoring — no LLM, pure threshold rules
   const scoredIssues = scoreSignals(signals.mobile, signals.desktop)
+  // Append external signal scores (CWV + Lighthouse from PSI)
+  scoredIssues.push(...scoreExternalSignals(externalSignals ?? { cwv: null, lighthouse: null }))
   console.log(`[pipeline] Job ${jobId}: ${scoredIssues.length} issues scored`)
 
   // Upload screenshot to Vercel Blob (non-blocking — proceeds even if upload fails)
   const screenshotUrl = screenshot ? await uploadScreenshot(jobId, screenshot) : null
-  const techStackJson = techProfile as unknown as Parameters<typeof prisma.result.create>[0]['data']['tech_stack']
+
+  // Merge _signals (raw CWV + Lighthouse) into tech_stack JSON column (no schema change needed)
+  const techStackWithSignals = {
+    ...(techProfile as object),
+    _signals: {
+      cwv: externalSignals?.cwv ?? null,
+      lighthouse: externalSignals?.lighthouse ?? null,
+    },
+  }
+  const techStackJson = techStackWithSignals as unknown as Parameters<typeof prisma.result.create>[0]['data']['tech_stack']
 
   // Zero-issues path: skip Stage 2 + Stage 3 API calls entirely to avoid unnecessary spend
   if (scoredIssues.length === 0) {
