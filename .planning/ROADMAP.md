@@ -61,11 +61,19 @@ Plans:
 **Requirements:** SIGNAL-04, AI-01, AI-02, AI-03, AI-04
 **Plans:** 4 plans
 
-Plans:
+**Wave 1** *(parallel)*
 - [ ] 07-01-PLAN.md — Stage 1.5 vision scanner: screenshot → Groq vision model → ScoredIssue[] (SIGNAL-04)
 - [ ] 07-02-PLAN.md — Stage 2 enrichment: fix_suggestion + severity_justification fields, Prisma schema + migration (AI-01, AI-02)
+
+**Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 07-03-PLAN.md — Page-type detector + benchmark context builder + Stage 3 wiring (AI-03, AI-04)
+
+**Wave 3** *(blocked on Wave 2 completion)*
 - [ ] 07-04-PLAN.md — UI display: IssueCard fix/impact rows, results page type annotation (AI-01, AI-02)
+
+**Cross-cutting constraints:**
+- Stage 1.5 MUST run before Stage 2 so visual issues enter Stage 2 causal reasoning
+- Prisma migration (`@default("")`) in 07-02 MUST complete before verification
 
 **Success criteria:**
 1. Each issue includes a concrete fix suggestion (specific action, not advisory)

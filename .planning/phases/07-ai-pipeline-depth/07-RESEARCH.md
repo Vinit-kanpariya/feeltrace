@@ -665,7 +665,7 @@ When CWV benchmark context is provided:
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Does forced `tool_choice` work with multimodal image inputs on `llama-4-scout`?**
    - What we know: Groq docs say the model "supports tool use" and "JSON mode" with image inputs; the vision example shows a `tools` + `tool_choice` cURL example
