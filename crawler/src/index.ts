@@ -56,6 +56,12 @@ async function start(): Promise<void> {
     process.exit(1)
   }
 
+  // PAGESPEED_API_KEY is soft-required: PSI/CWV/Lighthouse signals are disabled if absent.
+  // Never process.exit(1) — the crawler continues without external signals.
+  if (!process.env.PAGESPEED_API_KEY) {
+    console.warn('[feeltrace-crawler] PAGESPEED_API_KEY not set — PSI/CWV/Lighthouse signals disabled')
+  }
+
   console.log('[feeltrace-crawler] Crawler URL:', process.env.RAILWAY_CRAWLER_URL)
 
   // Step 1: Initialize the p-queue singleton before accepting any requests.
