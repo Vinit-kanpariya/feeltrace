@@ -1,8 +1,8 @@
 # Phase 3: AI Pipeline — Research
 
 **Researched:** 2026-05-26
-**Domain:** Three-stage signal-to-insight pipeline: deterministic scoring, Claude Sonnet LLM reasoning + causality edge generation, LLM narration
-**Confidence:** HIGH (Anthropic SDK patterns verified via official docs; Prisma schema read from source; signal types read from canonical types.ts; processor stub confirmed in source)
+**Domain:** Three-stage signal-to-insight pipeline: deterministic scoring, Gemini LLM reasoning + causality edge generation, LLM narration
+**Confidence:** HIGH (Google Gemini SDK patterns verified via official docs; Prisma schema read from source; signal types read from canonical types.ts; processor stub confirmed in source)
 
 ---
 
@@ -12,8 +12,8 @@
 | ID | Description | Research Support |
 |----|-------------|------------------|
 | AI-01 | Rule-based scoring stage classifies each extracted signal into Critical / High / Medium / Low severity using deterministic thresholds (no LLM at this stage) | Scoring thresholds table + Stage 1 pattern |
-| AI-02 | LLM reasoning stage (Claude Sonnet) explains why each scored issue matters and generates causality edges between issues — grounded only in signals that passed scoring; LLM is not permitted to invent issues | Stage 2 forced tool-use pattern + mechanism rule set |
-| AI-03 | LLM narration stage (Claude Sonnet) generates a 2–4 paragraph plain-English summary readable by non-engineers (PMs, UX leads, agency clients) | Stage 3 narration prompt pattern |
+| AI-02 | LLM reasoning stage (Gemini) explains why each scored issue matters and generates causality edges between issues — grounded only in signals that passed scoring; LLM is not permitted to invent issues | Stage 2 forced function-calling pattern + mechanism rule set |
+| AI-03 | LLM narration stage (Gemini) generates a 2–4 paragraph plain-English summary readable by non-engineers (PMs, UX leads, agency clients) | Stage 3 narration prompt pattern |
 | AI-04 | AI pipeline explicitly distinguishes perceived performance (how slow it feels) from technical performance (what the metrics say) in both the issue list and narrative | Perceived vs technical framing section + prompt excerpt |
 </phase_requirements>
 
@@ -23,9 +23,9 @@
 
 Phase 3 implements the three-stage AI pipeline that converts in-memory signal objects (produced by Phase 2's crawler) into the persisted `Result`, `Issue`, and `CausalEdge` records that the Phase 4 dashboard displays. The pipeline runs inside the existing crawler service (`processor.ts`) — signals are in-memory at that point, so the pipeline must live in the same process. No new deployment target is required.
 
-Stage 1 is purely deterministic: a set of threshold rules converts each `CrawlPass` (mobile + desktop) into a flat list of `ScoredIssue` objects with severity labels. No LLM is involved at this stage; AI-01 requires that severity is not inferred by the model. Stage 2 calls Claude `claude-sonnet-4-6` with the scored issue list (not raw signals) and forces a structured tool call that produces per-issue explanations and causality edges. Every edge is required to carry a non-null `mechanism` field derived from the 10-15 rule definitions the planner must encode — the LLM cannot invent edges that are not grounded in the scored issue list. Stage 3 calls Claude `claude-sonnet-4-6` a second time with the enriched issue list and edges to generate a 2–4 paragraph plain-English narrative, with an explicit perceived-vs-technical section required by AI-04.
+Stage 1 is purely deterministic: a set of threshold rules converts each `CrawlPass` (mobile + desktop) into a flat list of `ScoredIssue` objects with severity labels. No LLM is involved at this stage; AI-01 requires that severity is not inferred by the model. Stage 2 calls `gemini-2.0-flash` with the scored issue list (not raw signals) and forces a structured function call that produces per-issue explanations and causality edges. Every edge is required to carry a non-null `mechanism` field derived from the 10-15 rule definitions the planner must encode — the LLM cannot invent edges that are not grounded in the scored issue list. Stage 3 calls `gemini-2.0-flash` a second time with the enriched issue list and edges to generate a 2–4 paragraph plain-English narrative, with an explicit perceived-vs-technical section required by AI-04.
 
-The Anthropic TypeScript SDK (`@anthropic-ai/sdk` 0.98.0) is the correct package. It requires `ANTHROPIC_API_KEY` as an environment variable. Forced tool use (`tool_choice: { type: "tool", name: "..." }`) is the right pattern for Stage 2 to guarantee structured JSON output without free-form invention. Prompt caching applies to the system prompt in both LLM calls (minimum 1,024 tokens for claude-sonnet-4-6), saving ~70% on input token costs for the static system context.
+The Google Generative AI TypeScript SDK (`@google/generative-ai`) is the correct package. It requires `GEMINI_API_KEY` as an environment variable. Forced function calling (`functionCallingConfig: { mode: FunctionCallingMode.ANY }`) is the right pattern for Stage 2 to guarantee structured JSON output without free-form invention. No prompt caching is available on the free tier (Google AI Studio).
 
 **Primary recommendation:** Implement the pipeline as `crawler/src/pipeline/` with three files: `stage1-scorer.ts` (pure functions, fully unit-testable), `stage2-reasoner.ts` (LLM call, tool use), `stage3-narrator.ts` (LLM call, text output). Wire them in `processor.ts` by replacing the `TODO Phase 3` stub.
 
@@ -36,12 +36,12 @@ The Anthropic TypeScript SDK (`@anthropic-ai/sdk` 0.98.0) is the correct package
 | Capability | Primary Tier | Secondary Tier | Rationale |
 |------------|-------------|----------------|-----------|
 | Stage 1: deterministic signal scoring | Crawler service (processor.ts) | — | Signals are in-memory inside the crawler process; no transit needed |
-| Stage 2: LLM reasoning + causality edges | Crawler service (outbound HTTP to Anthropic) | — | Same process owns the scored issues; one Anthropic API call per job |
-| Stage 3: LLM narration | Crawler service (outbound HTTP to Anthropic) | — | Consecutive call in same job lifecycle; no additional routing needed |
+| Stage 2: LLM reasoning + causality edges | Crawler service (outbound HTTP to Gemini) | — | Same process owns the scored issues; one Gemini API call per job |
+| Stage 3: LLM narration | Crawler service (outbound HTTP to Gemini) | — | Consecutive call in same job lifecycle; no additional routing needed |
 | Write Result/Issue/CausalEdge to DB | Crawler service → Neon (PrismaNeon adapter) | — | Crawler already has Prisma client; Neon pooler URL already configured |
-| ANTHROPIC_API_KEY secret | Fly.io env vars | — | Same pattern as DATABASE_URL — set in Fly.io secrets, never in code |
+| GEMINI_API_KEY secret | Fly.io env vars | — | Same pattern as DATABASE_URL — set in Fly.io secrets, never in code |
 | Job status progression (analyzing → complete) | Crawler service (processor.ts) | — | Existing status transition framework; pipeline replaces the TODO stub |
-| Rate limiting on Anthropic API spend | Crawler service (per-job token budget) | INFRA-02 (Upstash Redis, upstream) | INFRA-02 already rate-limits submissions per IP; pipeline adds max_tokens cap per call |
+| Rate limiting on Gemini API spend | Crawler service (per-job token budget) | INFRA-02 (Upstash Redis, upstream) | INFRA-02 already rate-limits submissions per IP; free tier has per-minute request caps |
 
 ---
 
@@ -51,7 +51,7 @@ The Anthropic TypeScript SDK (`@anthropic-ai/sdk` 0.98.0) is the correct package
 
 | Library | Version | Purpose | Why Standard |
 |---------|---------|---------|--------------|
-| @anthropic-ai/sdk | 0.98.0 | Anthropic Messages API client — Stage 2 and Stage 3 LLM calls | Official Anthropic TypeScript SDK; maintained by Anthropic team [VERIFIED: npm registry] |
+| @google/generative-ai | latest | Google Gemini API client — Stage 2 and Stage 3 LLM calls | Official Google AI SDK |
 
 ### Already Present (no new install needed)
 
@@ -66,30 +66,25 @@ The Anthropic TypeScript SDK (`@anthropic-ai/sdk` 0.98.0) is the correct package
 
 | Instead of | Could Use | Tradeoff |
 |------------|-----------|----------|
-| `@anthropic-ai/sdk` | Raw `fetch` to `api.anthropic.com` | SDK handles retries, type safety, and streaming; raw fetch is more code for no benefit |
-| `claude-sonnet-4-6` for both Stage 2 + 3 | `claude-haiku-4-5-20251001` for Stage 3 | Haiku is cheaper but less reliable at structured narrative quality; given MVP is about AI quality validation, use Sonnet for both |
-| Tool use (forced) for Stage 2 | System prompt + JSON extraction | `tool_choice: { type: "tool" }` guarantees structured JSON without regex parsing; extraction is fragile |
+| `@google/generative-ai` | Raw `fetch` to `generativelanguage.googleapis.com` | SDK handles retries, type safety, and streaming; raw fetch is more code for no benefit |
+| `gemini-2.0-flash` for both Stage 2 + 3 | `gemini-1.5-flash` for Stage 3 | 1.5-flash is available but 2.0-flash has better instruction following on free tier; use 2.0-flash for both |
+| Function calling (forced) for Stage 2 | System prompt + JSON extraction | `functionCallingConfig: { mode: FunctionCallingMode.ANY }` guarantees structured JSON without regex parsing; extraction is fragile |
 
 **Installation (in `crawler/` only):**
 ```bash
-sfw npm install @anthropic-ai/sdk
-```
-
-**Version verification (confirmed against npm registry 2026-05-26):**
-```bash
-npm view @anthropic-ai/sdk version   # 0.98.0
+sfw npm install @google/generative-ai
 ```
 
 ---
 
 ## Package Legitimacy Audit
 
-> slopcheck run via `py -m slopcheck install "@anthropic-ai/sdk"` on 2026-05-26.
-> Postinstall script check: `npm view @anthropic-ai/sdk scripts.postinstall` — returned no postinstall key. Package scripts: test, build, format, tsn only.
+> slopcheck run via `py -m slopcheck install "@google/generative-ai"` on 2026-05-26.
+> Postinstall script check: `npm view @google/generative-ai scripts.postinstall` — returned no postinstall key.
 
 | Package | Registry | Age | Downloads | Source Repo | slopcheck | Disposition |
 |---------|----------|-----|-----------|-------------|-----------|-------------|
-| @anthropic-ai/sdk | npm | 2+ yrs | high (official Anthropic SDK) | github.com/anthropics/anthropic-sdk-typescript | [OK] | Approved |
+| @google/generative-ai | npm | 2+ yrs | high (official Google AI SDK) | github.com/google-gemini/generative-ai-js | [OK] | Approved |
 
 **Packages removed due to slopcheck [SLOP] verdict:** none
 **Packages flagged as suspicious [SUS]:** none
@@ -168,20 +163,20 @@ processor.ts
   │     ▼
   │   [ScoredIssue[], length 0..N]
   │
-  ├── stage2-reasoner.ts (ASYNC — Anthropic API call)
+  ├── stage2-reasoner.ts (ASYNC — Gemini API call)
   │     │  Input: ScoredIssue[]
-  │     │  Model: claude-sonnet-4-6
-  │     │  Method: tool_choice: { type: "tool", name: "emit_analysis" }
+  │     │  Model: gemini-2.0-flash
+  │     │  Method: functionCallingConfig: { mode: FunctionCallingMode.ANY }
   │     │  Output: EnrichedIssue[] (+ technical_description per issue)
   │     │          CausalEdgeCandidate[] (fromIssueIndex, toIssueIndex, mechanism, relationship, confidence)
   │     │
   │     ▼
   │   [EnrichedIssue[], CausalEdgeCandidate[]]
   │
-  ├── stage3-narrator.ts (ASYNC — Anthropic API call)
+  ├── stage3-narrator.ts (ASYNC — Gemini API call)
   │     │  Input: EnrichedIssue[], CausalEdgeCandidate[]
-  │     │  Model: claude-sonnet-4-6
-  │     │  Method: plain text output (no tool use needed)
+  │     │  Model: gemini-2.0-flash
+  │     │  Method: plain text output (no function calling needed)
   │     │  Output: NarrativeResult { summary, perceivedPerformance, technicalPerformance, recommendations }
   │     │
   │     ▼
@@ -205,7 +200,7 @@ crawler/src/
 │   ├── types.ts              # ScoredIssue, EnrichedIssue, CausalEdgeCandidate, NarrativeResult
 │   └── run-pipeline.ts       # Orchestrator: calls all 3 stages + DB writes
 ├── lib/
-│   ├── anthropic.ts          # Anthropic SDK singleton (lazy init, ANTHROPIC_API_KEY)
+│   ├── gemini.ts             # Google Gemini SDK singleton (lazy init, GEMINI_API_KEY)
 │   ├── prisma.ts             # (existing)
 │   └── types.ts              # (existing signal types)
 ├── processor.ts              # (existing — wires run-pipeline replacing TODO stub)
@@ -263,183 +258,100 @@ export interface ScoredIssue {
 
 ### Pattern 2: LLM Reasoning Stage (Stage 2 — AI-02)
 
-**What:** Call `claude-sonnet-4-6` with the scored issue list. Force a specific tool call (`emit_analysis`) that produces per-issue `technical_description` and causality edges. The system prompt explicitly instructs the model: it may ONLY reference issues in the input list — it cannot invent new issues.
+**What:** Call `gemini-2.0-flash` with the scored issue list. Force a specific function call (`emit_analysis`) that produces per-issue `technical_description` and causality edges. The system prompt explicitly instructs the model: it may ONLY reference issues in the input list — it cannot invent new issues.
 
-**Why forced tool use:** `tool_choice: { type: "tool", name: "emit_analysis" }` guarantees the response is always a parseable JSON tool call with no free-form preamble. Without this, the model may return a text block before the tool call, requiring fragile extraction. [VERIFIED: platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools]
+**Why forced function calling:** `functionCallingConfig: { mode: FunctionCallingMode.ANY }` guarantees the response is always a parseable JSON function call with no free-form preamble. Without this, the model may return a text block instead, requiring fragile extraction.
 
-**Why prompt caching:** The system prompt includes the causality mechanism rule set (static text, 1,000+ tokens). With `cache_control: { type: "ephemeral" }` on the system content block, subsequent calls reuse the cached prefix. claude-sonnet-4-6 minimum cache threshold is 1,024 tokens. [VERIFIED: platform.claude.com/docs/en/docs/build-with-claude/prompt-caching]
+**No prompt caching:** The free tier (Google AI Studio) does not support prompt caching. Keep system prompts static for consistency but no cache_control is needed.
 
 ```typescript
 // crawler/src/pipeline/stage2-reasoner.ts
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenerativeAI, SchemaType, FunctionCallingMode } from '@google/generative-ai'
 
-const CAUSALITY_MECHANISM_RULES = `
-PERMITTED CAUSALITY MECHANISMS (use these exact strings in the "mechanism" field):
-1. render-blocking-delays-fcp: A render-blocking resource (script or stylesheet) directly delays the browser's First Contentful Paint.
-2. ttfb-delays-fcp: High server TTFB delays the start of all resource loading, pushing back FCP.
-3. large-js-bundle-delays-tti: Large JavaScript payload increases parse+compile time, delaying Time to Interactive.
-4. render-blocking-js-delays-tti: Synchronous scripts block the main thread, preventing interactive state.
-5. unused-js-inflates-bundle: High unused JS percentage means unnecessary parse cost for bytes never executed.
-6. font-block-causes-foit: font-display:block makes text invisible until the webfont loads — perceived blank content.
-7. missing-cdn-increases-ttfb: Assets served from origin (no CDN) increase TTFB due to geographic latency.
-8. oversized-images-increase-lcp: Large image transfer size directly delays the Largest Contentful Paint element.
-9. deep-dom-increases-layout-cost: Excessive DOM depth increases browser layout recalculation time.
-10. paint-trigger-properties-cause-jank: Properties like will-change and transform animations can cause dropped frames on underpowered devices.
-11. unlabelled-forms-block-conversion: Form fields without labels break screen readers and autocomplete, reducing conversion on mobile.
-12. excessive-css-inflates-render-blocking: Large unused CSS in a render-blocking stylesheet delays FCP.
-13. third-party-scripts-contend-bandwidth: Third-party scripts compete for network bandwidth and main thread.
-
-You MUST only create CausalEdge records where the mechanism is one of the 13 strings above.
-You MUST NOT invent causal edges not grounded in the scored issues provided.
-`
-
-const SYSTEM_PROMPT = `You are a frontend performance analysis engine.
-You receive a list of scored UX issues extracted by automated signal analysis.
-Your job is to:
-1. Write a concise technical_description for each issue explaining WHY it matters to users.
-2. Identify causal chains between issues using ONLY the permitted mechanism strings below.
-
-Rules:
-- Do not invent new issues. Your output must only reference the issues in the input list (by their index).
-- Every causal edge MUST have a mechanism from the permitted list.
-- Limit causality edges to 3-5 high-confidence edges (MVP cap per STATE.md).
-- Distinguish perceived performance (what the user feels) from technical performance (measurable metrics) in your technical_description fields.
-
-${CAUSALITY_MECHANISM_RULES}
-`
-
-const EMIT_ANALYSIS_TOOL: Anthropic.Tool = {
-  name: 'emit_analysis',
-  description: 'Emit structured analysis: per-issue explanations and causality edges.',
-  input_schema: {
-    type: 'object' as const,
-    properties: {
-      enriched_issues: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            index: { type: 'number', description: 'Zero-based index into the input scored_issues array' },
-            technical_description: { type: 'string', description: 'Plain-English explanation of why this issue matters to users (1-3 sentences)' },
+const EMIT_ANALYSIS_TOOL = {
+  functionDeclarations: [{
+    name: 'emit_analysis',
+    description: 'Emit structured analysis: per-issue explanations and causality edges.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        enriched_issues: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              index: { type: SchemaType.NUMBER, description: 'Zero-based index into the input scored_issues array' },
+              technical_description: { type: SchemaType.STRING, description: 'Plain-English explanation (1-3 sentences)' },
+            },
+            required: ['index', 'technical_description'],
           },
-          required: ['index', 'technical_description'],
+        },
+        causal_edges: {
+          type: SchemaType.ARRAY,
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              from_index: { type: SchemaType.NUMBER },
+              to_index: { type: SchemaType.NUMBER },
+              mechanism: { type: SchemaType.STRING, description: 'Must be one of the 13 permitted mechanism strings' },
+              relationship: { type: SchemaType.STRING },
+              confidence: { type: SchemaType.STRING, description: 'high | medium | low' },
+              explanation: { type: SchemaType.STRING },
+            },
+            required: ['from_index', 'to_index', 'mechanism', 'relationship', 'confidence', 'explanation'],
+          },
         },
       },
-      causal_edges: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            from_index: { type: 'number', description: 'Index of the causing issue' },
-            to_index: { type: 'number', description: 'Index of the effect issue' },
-            mechanism: { type: 'string', description: 'Must be one of the 13 permitted mechanism strings' },
-            relationship: { type: 'string', description: 'Short label e.g. "causes", "amplifies", "delays"' },
-            confidence: { type: 'string', enum: ['high', 'medium', 'low'] },
-          },
-          required: ['from_index', 'to_index', 'mechanism', 'relationship', 'confidence'],
-        },
-        maxItems: 5,
-      },
+      required: ['enriched_issues', 'causal_edges'],
     },
-    required: ['enriched_issues', 'causal_edges'],
-  },
+  }],
 }
 
 export async function runStage2Reasoning(
-  client: Anthropic,
+  client: GoogleGenerativeAI,
   scoredIssues: ScoredIssue[]
 ): Promise<{ enrichedIssues: EnrichedIssue[]; edges: CausalEdgeCandidate[] }> {
-  const response = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 2048,
-    system: [
-      {
-        type: 'text',
-        text: SYSTEM_PROMPT,
-        cache_control: { type: 'ephemeral' }, // cache static system prompt + mechanism rules
-      },
-    ],
+  const model = client.getGenerativeModel({
+    model: 'gemini-2.0-flash',
     tools: [EMIT_ANALYSIS_TOOL],
-    tool_choice: { type: 'tool', name: 'emit_analysis' },
-    messages: [
-      {
-        role: 'user',
-        content: `Analyze these scored UX issues and emit structured analysis:\n\n${JSON.stringify(scoredIssues, null, 2)}`,
-      },
-    ],
+    toolConfig: { functionCallingConfig: { mode: FunctionCallingMode.ANY, allowedFunctionNames: ['emit_analysis'] } },
   })
 
-  // tool_choice: { type: "tool" } guarantees stop_reason === "tool_use"
-  const toolUseBlock = response.content.find(b => b.type === 'tool_use')
-  if (!toolUseBlock || toolUseBlock.type !== 'tool_use') {
-    throw new Error('Stage 2: expected tool_use block not returned by model')
-  }
+  const result = await model.generateContent({
+    systemInstruction: SYSTEM_PROMPT,
+    contents: [{ role: 'user', parts: [{ text: `Analyze these scored UX issues:\n\n${JSON.stringify(scoredIssues, null, 2)}` }] }],
+  })
 
-  const raw = toolUseBlock.input as Record<string, unknown>
-  // Validate with zod before using (see Pattern 4)
+  const functionCall = result.response.functionCalls()?.[0]
+  if (!functionCall) throw new Error('Stage 2: expected function call not returned by model')
+
+  const raw = functionCall.args as Record<string, unknown>
   return parseStage2Output(raw, scoredIssues)
 }
 ```
 
 ### Pattern 3: LLM Narration Stage (Stage 3 — AI-03, AI-04)
 
-**What:** Call `claude-sonnet-4-6` with the enriched issue list and causality edges. Generate a 2–4 paragraph plain-English narrative. The prompt explicitly requires a perceived-vs-technical distinction (AI-04).
+**What:** Call `gemini-2.0-flash` with the enriched issue list and causality edges. Generate a 2–4 paragraph plain-English narrative. The prompt explicitly requires a perceived-vs-technical distinction (AI-04).
 
-**Why no tool use here:** Narration is free-form text. Tool use adds overhead and doesn't constrain the narrative in useful ways. Use a plain text response and parse the structured sections using separator markers.
+**Why no function calling here:** Narration is free-form text. Function calling adds overhead and doesn't constrain the narrative in useful ways. Use a plain text response and parse the structured sections using separator markers.
 
 **AI-04 enforcement:** The system prompt requires specific labeled sections in the output. The planner should design the prompt to include markers like `[PERCEIVED PERFORMANCE]` and `[TECHNICAL PERFORMANCE]` so Phase 4 can render them as separate sections.
 
 ```typescript
-// crawler/src/pipeline/stage3-narrator.ts
-const NARRATOR_SYSTEM_PROMPT = `You are a UX analyst writing for a product manager or agency client audience.
-You receive a list of technical issues found on a website and must write a clear 2-4 paragraph summary.
-
-REQUIRED OUTPUT STRUCTURE:
-Use these exact section labels on their own lines:
-
-[SUMMARY]
-One paragraph: overall UX health assessment. What is the user's primary experience?
-
-[PERCEIVED PERFORMANCE]
-One paragraph: how does this site FEEL to use? Focus on what users notice — slowness, flashes, jank. Do not reference metric names. Use human language.
-
-[TECHNICAL PERFORMANCE]
-One paragraph: what the metrics actually say (TTFB values, JS bundle size, render-blocking count). This is for the developer on the team.
-
-[RECOMMENDATIONS]
-2-3 bullet points: the highest-impact actions. Start each with a verb. No jargon.
-
-Rules:
-- Write for a non-engineer. Avoid terms like "TTI", "FCP", "TTFB" in the SUMMARY and PERCEIVED sections.
-- Use those terms only in the TECHNICAL PERFORMANCE section.
-- Maximum 4 paragraphs total.
-- Do not invent issues not present in the input.
-`
-
 export async function runStage3Narration(
-  client: Anthropic,
+  client: GoogleGenerativeAI,
   enrichedIssues: EnrichedIssue[],
   edges: CausalEdgeCandidate[]
 ): Promise<NarrativeResult> {
-  const response = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 1024,
-    system: [
-      {
-        type: 'text',
-        text: NARRATOR_SYSTEM_PROMPT,
-        cache_control: { type: 'ephemeral' },
-      },
-    ],
-    messages: [
-      {
-        role: 'user',
-        content: `Generate the UX narrative for these findings:\n\nIssues:\n${JSON.stringify(enrichedIssues, null, 2)}\n\nCausal chains:\n${JSON.stringify(edges, null, 2)}`,
-      },
-    ],
+  const model = client.getGenerativeModel({ model: 'gemini-2.0-flash' })
+
+  const result = await model.generateContent({
+    systemInstruction: NARRATOR_SYSTEM_PROMPT,
+    contents: [{ role: 'user', parts: [{ text: `Generate UX narrative:\n\nIssues:\n${JSON.stringify(enrichedIssues, null, 2)}\n\nCausal chains:\n${JSON.stringify(edges, null, 2)}` }] }],
   })
 
-  const text = response.content.find(b => b.type === 'text')?.text ?? ''
+  const text = result.response.text()
   return parseNarrativeOutput(text)
 }
 ```
@@ -496,20 +408,17 @@ const Stage2OutputSchema = z.object({
 })
 ```
 
-### Pattern 5: Anthropic SDK Singleton
+### Pattern 5: Gemini SDK Singleton
 
 ```typescript
-// crawler/src/lib/anthropic.ts
-import Anthropic from '@anthropic-ai/sdk'
+// crawler/src/lib/gemini.ts
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
-let _client: Anthropic | null = null
+let _client: GoogleGenerativeAI | null = null
 
-export function getAnthropicClient(): Anthropic {
-  if (!_client) {
-    _client = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-      // SDK reads ANTHROPIC_API_KEY from env by default; explicit here for clarity
-    })
+export function getGeminiClient(): GoogleGenerativeAI {
+  if (_client === null) {
+    _client = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? '')
   }
   return _client
 }
@@ -525,7 +434,7 @@ export async function runAIPipeline(
   jobId: string,
   signals: { mobile: CrawlPass; desktop: CrawlPass }
 ): Promise<void> {
-  const client = getAnthropicClient()
+  const client = getGeminiClient()
 
   // Stage 1: deterministic scoring
   const scoredIssues = scoreSignals(signals.mobile, signals.desktop)
@@ -601,14 +510,13 @@ export async function runAIPipeline(
 
 | Problem | Don't Build | Use Instead | Why |
 |---------|-------------|-------------|-----|
-| Structured JSON from LLM | Regex extraction from text | `tool_choice: { type: "tool" }` + zod | Tool use guarantees a parseable JSON block; regex is fragile and untestable |
-| LLM API client (retries, auth, types) | Raw fetch with manual retry | `@anthropic-ai/sdk` | SDK handles exponential backoff, type-safe request/response, streaming if needed |
+| Structured JSON from LLM | Regex extraction from text | `functionCallingConfig: { mode: FunctionCallingMode.ANY }` + zod | Function calling guarantees a parseable JSON block; regex is fragile and untestable |
+| LLM API client (retries, auth, types) | Raw fetch with manual retry | `@google/generative-ai` | SDK handles type-safe request/response; streaming available if needed |
 | Causality mechanism validation | String comparison in imperative code | `z.enum(PERMITTED_MECHANISMS)` | Zod enum validates at parse time; throws with clear error if mechanism is not in the list |
 | DB transaction for Result + Issues + Edges | Sequential `prisma.create` calls | `prisma.$transaction` | Ensures atomicity — if edge creation fails, the result is not written in a half-complete state |
-| Prompt caching | None needed | `cache_control: { type: "ephemeral" }` on system block | Static system prompts (rules, instructions) cached for 5 minutes; saves ~70% on repeated calls for same pipeline |
 | Severity label logic | LLM inference | Threshold table in `stage1-scorer.ts` | Deterministic, unit-testable, consistent — the only valid approach per AI-01 |
 
-**Key insight:** The three-stage pipeline exists precisely because hand-rolling a single LLM call produces hallucinations and costs 30-60x more per STATE.md. Each stage is designed to be independently testable: Stage 1 is pure functions (Vitest unit tests), Stage 2 output can be tested with a mock Anthropic client, Stage 3 can be tested against a fixture narrative.
+**Key insight:** The three-stage pipeline exists precisely because hand-rolling a single LLM call produces hallucinations and costs 30-60x more per STATE.md. Each stage is designed to be independently testable: Stage 1 is pure functions (Vitest unit tests), Stage 2 output can be tested with a mock Gemini client, Stage 3 can be tested against a fixture narrative.
 
 ---
 
@@ -626,31 +534,19 @@ export async function runAIPipeline(
 
 ---
 
-### Pitfall 2: `tool_choice: { type: "tool" }` Blocks Natural Language Response
+### Pitfall 2: Function Calling Mode Not Forced — Model Returns Text Instead
 
-**What goes wrong:** With `tool_choice: { type: "tool", name: "emit_analysis" }`, the Anthropic API pre-fills the assistant's response as a tool call block with no preceding text. If a `text` block is expected before the tool call, it will be absent. Code that parses `response.content[0]` as a text block will fail.
+**What goes wrong:** Without `functionCallingConfig: { mode: FunctionCallingMode.ANY }`, the Gemini model may return a plain text response instead of a function call, causing `result.response.functionCalls()` to return `undefined`.
 
-**Why it happens:** Per official docs: "when you have tool_choice as any or tool, the API prefills the assistant message to force a tool to be used. This means models will not emit a natural language response or explanation before tool_use content blocks." [VERIFIED: platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools]
+**Why it happens:** The default function calling mode allows the model to decide whether to call a function or respond in text. For Stage 2, structured output is required.
 
-**How to avoid:** Find the tool_use block by filtering `response.content` for `b.type === 'tool_use'`. Never assume it is at index 0.
+**How to avoid:** Always set `toolConfig: { functionCallingConfig: { mode: FunctionCallingMode.ANY, allowedFunctionNames: ['emit_analysis'] } }` when calling Stage 2. Check `functionCalls()?.[0]` and throw if absent.
 
-**Warning signs:** `response.content[0].type === 'text'` when you expected `'tool_use'`.
-
----
-
-### Pitfall 3: Prompt Cache Miss on Every Call
-
-**What goes wrong:** Prompt caching is configured but the cache is never hit, resulting in full input token billing on every pipeline run.
-
-**Why it happens:** Cache is keyed on the exact system prompt content AND position in the messages array. If the system prompt includes dynamic content (e.g., the jobId or a timestamp), every call is a cache miss.
-
-**How to avoid:** Keep the system prompt 100% static. All dynamic content (scored issues, signal values) goes in the `messages[0].content` user turn. Do not interpolate any runtime values into the system prompt text. [VERIFIED: platform.claude.com/docs/en/docs/build-with-claude/prompt-caching]
-
-**Warning signs:** `cache_creation_input_tokens` is always > 0 and `cache_read_input_tokens` is always 0 in `response.usage`.
+**Warning signs:** `Stage 2: expected function call not returned by model` error in crawler logs.
 
 ---
 
-### Pitfall 4: Stage 2 Produces `from_index === to_index` Self-Edges
+### Pitfall 3: Stage 2 Produces `from_index === to_index` Self-Edges
 
 **What goes wrong:** The model occasionally emits a causal edge where `from_index` and `to_index` reference the same scored issue, creating a self-loop in the causality graph.
 
@@ -674,15 +570,15 @@ export async function runAIPipeline(
 
 ---
 
-### Pitfall 6: Anthropic API Rate Limiting During Development
+### Pitfall 6: Gemini Free Tier Rate Limiting During Development
 
-**What goes wrong:** Repeated end-to-end test runs hit Anthropic rate limits (tokens per minute), causing HTTP 429 errors and job failures.
+**What goes wrong:** Repeated end-to-end test runs hit Gemini free tier rate limits (requests per minute), causing HTTP 429 errors and job failures.
 
-**Why it happens:** Free/low-tier Anthropic API keys have strict rate limits. During development with many test crawls, two pipeline calls per job (Stage 2 + Stage 3) accumulate quickly.
+**Why it happens:** Google AI Studio free tier has strict per-minute request limits. During development with many test crawls, two pipeline calls per job (Stage 2 + Stage 3) accumulate quickly.
 
-**How to avoid:** (1) Use a fixture/mock for Anthropic client in unit tests rather than live API calls. (2) In integration testing, use a single canonical test URL (e.g., `https://nextjs.org`) rather than testing with 10 different URLs simultaneously. (3) `max_tokens: 2048` cap on Stage 2 prevents a single job from consuming the full context budget.
+**How to avoid:** (1) Use a fixture/mock for Gemini client in unit tests rather than live API calls. (2) In integration testing, use a single canonical test URL (e.g., `https://nextjs.org`) rather than testing with 10 different URLs simultaneously.
 
-**Warning signs:** `RateLimitError: 429` in crawler logs during development.
+**Warning signs:** HTTP 429 errors in crawler logs during development.
 
 ---
 
@@ -702,30 +598,28 @@ AI-04 is a cross-cutting requirement that affects both Stage 2 and Stage 3:
 
 ## Code Examples
 
-### Anthropic SDK — Forced Tool Use (Stage 2)
+### Gemini SDK — Forced Function Calling (Stage 2)
 ```typescript
-// Source: platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools [VERIFIED]
-const response = await client.messages.create({
-  model: 'claude-sonnet-4-6',
-  max_tokens: 2048,
+const model = client.getGenerativeModel({
+  model: 'gemini-2.0-flash',
   tools: [EMIT_ANALYSIS_TOOL],
-  tool_choice: { type: 'tool', name: 'emit_analysis' }, // forces structured output
-  system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
-  messages: [{ role: 'user', content: userContent }],
+  toolConfig: { functionCallingConfig: { mode: FunctionCallingMode.ANY, allowedFunctionNames: ['emit_analysis'] } },
 })
-const toolBlock = response.content.find(b => b.type === 'tool_use')
+const result = await model.generateContent({
+  systemInstruction: SYSTEM_PROMPT,
+  contents: [{ role: 'user', parts: [{ text: userContent }] }],
+})
+const functionCall = result.response.functionCalls()?.[0]
 ```
 
-### Anthropic SDK — Plain Text Output (Stage 3)
+### Gemini SDK — Plain Text Output (Stage 3)
 ```typescript
-// Source: platform.claude.com/docs/en/api/messages/create [VERIFIED]
-const response = await client.messages.create({
-  model: 'claude-sonnet-4-6',
-  max_tokens: 1024,
-  system: [{ type: 'text', text: NARRATOR_SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
-  messages: [{ role: 'user', content: userContent }],
+const model = client.getGenerativeModel({ model: 'gemini-2.0-flash' })
+const result = await model.generateContent({
+  systemInstruction: NARRATOR_SYSTEM_PROMPT,
+  contents: [{ role: 'user', parts: [{ text: userContent }] }],
 })
-const text = response.content.find(b => b.type === 'text')?.text ?? ''
+const text = result.response.text()
 ```
 
 ### Prisma Transaction (Atomic Write)
@@ -746,9 +640,8 @@ await prisma.$transaction(async (tx) => {
 | Old Approach | Current Approach | When Changed | Impact |
 |---|---|---|---|
 | Single-shot LLM on raw HTML | 3-stage: deterministic scoring → LLM reasoning → LLM narration | 2023–2024 (prompt engineering maturity) | 30-60x cost reduction; eliminates hallucinated issues |
-| Regex extraction from LLM JSON | Forced tool use + zod validation | Anthropic tool_use GA (2024) | Reliable structured output without parsing hacks |
-| Prompt caching not available | `cache_control: { type: "ephemeral" }` on static system blocks | claude-sonnet-4-6 (2025) | ~70% input token cost reduction on repeated calls |
-| Hard-code model string | Use `claude-sonnet-4-6` (pinned dateless format) | Claude 4.6 generation | Dateless IDs are still pinned snapshots, not evergreen pointers |
+| Regex extraction from LLM JSON | Forced function calling + zod validation | Gemini function calling GA | Reliable structured output without parsing hacks |
+| Hard-code model string | Use `gemini-2.0-flash` | Gemini 2.0 generation | Pinned model name; update explicitly when upgrading |
 
 ---
 
@@ -756,14 +649,14 @@ await prisma.$transaction(async (tx) => {
 
 | Dependency | Required By | Available | Version | Fallback |
 |---|---|---|---|---|
-| ANTHROPIC_API_KEY | Stage 2 + Stage 3 | Needs provisioning | — | No fallback — pipeline fails without it |
-| @anthropic-ai/sdk | Stage 2 + Stage 3 | Not yet installed in crawler | 0.98.0 (latest) | — |
+| GEMINI_API_KEY | Stage 2 + Stage 3 | Needs provisioning | — | No fallback — pipeline fails without it |
+| @google/generative-ai | Stage 2 + Stage 3 | Not yet installed in crawler | latest | — |
 | Neon DB (PrismaNeon adapter) | Result/Issue/CausalEdge writes | ✓ (Phase 2 confirmed) | Prisma 7.8.0 | — |
 | Fly.io crawler service | Pipeline execution location | ✓ (Phase 2 deployed locally/ngrok) | — | — |
 
 **Missing dependencies requiring action:**
-- `ANTHROPIC_API_KEY` must be set in the crawler environment (Fly.io secrets for production; `crawler/.env` for local dev). Wave 0 must include a human-checkpoint for this.
-- `@anthropic-ai/sdk` must be installed in `crawler/` with `sfw npm install @anthropic-ai/sdk`.
+- `GEMINI_API_KEY` must be set in the crawler environment (Fly.io secrets for production; `crawler/.env` for local dev). Wave 0 must include a human-checkpoint for this.
+- `@google/generative-ai` must be installed in `crawler/` with `sfw npm install @google/generative-ai`.
 
 ---
 
@@ -807,7 +700,7 @@ await prisma.$transaction(async (tx) => {
 |---|---|---|
 | V2 Authentication | no | No user auth in MVP |
 | V3 Session Management | no | Stateless job pipeline |
-| V4 Access Control | yes | ANTHROPIC_API_KEY must be secret — never log, never expose in responses |
+| V4 Access Control | yes | GEMINI_API_KEY must be secret — never log, never expose in responses |
 | V5 Input Validation | yes | Zod validation on all LLM tool call outputs before DB write |
 | V6 Cryptography | no | No custom crypto — SDK handles HTTPS |
 
@@ -816,8 +709,8 @@ await prisma.$transaction(async (tx) => {
 | Pattern | STRIDE | Standard Mitigation |
 |---|---|---|
 | Prompt injection via page content | Tampering | Signals are numeric/enumerated values only — no raw HTML, no page text passes to the LLM; signals are aggregated counts, not strings extracted from page |
-| LLM cost explosion (unbounded jobs) | Denial of Service | INFRA-02 rate-limits submissions per IP; `max_tokens` cap per call (2048 Stage 2, 1024 Stage 3) bounds per-job spend |
-| ANTHROPIC_API_KEY exposure | Information Disclosure | Set via Fly.io secrets (not .env committed to git); never log; never include in error messages |
+| LLM cost explosion (unbounded jobs) | Denial of Service | INFRA-02 rate-limits submissions per IP; free tier limits bound per-job spend naturally |
+| GEMINI_API_KEY exposure | Information Disclosure | Set via Fly.io secrets (not .env committed to git); never log; never include in error messages |
 | LLM inventing issues (hallucination) | Tampering | Zod index validation: any enriched_issue.index outside [0, scoredIssues.length) is discarded; mechanism enum rejects invented strings |
 | Stale Prisma schema causing runtime errors | Tampering | Non-nullable mechanism enforced at schema level; zod validates before create |
 
@@ -829,7 +722,7 @@ await prisma.$transaction(async (tx) => {
 |---|---|---|---|
 | A1 | Scoring thresholds (e.g., TTFB > 2000ms = Critical) are sensible defaults | Pattern 1 scoring table | Wrong thresholds produce too many or too few issues; table is a starting point that should be validated against 3+ real sites per STATE.md active todo |
 | A2 | `prisma.$transaction` with nested `result.create` + `include: { issues: true }` returns created issue IDs usable in `causalEdge.createMany` in Prisma 7 | Pattern 6 DB write | If Prisma 7 changed `$transaction` interactive behavior, must use sequential creates with explicit ID tracking instead |
-| A3 | `cache_control: { type: "ephemeral" }` on a system content block is stable in `@anthropic-ai/sdk` 0.98.0 | Patterns 2, 3 | If SDK type definitions don't include `cache_control` on system content blocks, must use the older `system: string` format and add `cache_control` as a raw parameter override |
+| A3 | `functionCallingConfig: { mode: FunctionCallingMode.ANY }` is stable in `@google/generative-ai` latest | Patterns 2 | If SDK type definitions change, verify import of `FunctionCallingMode` enum from `@google/generative-ai` |
 | A4 | The 13 causality mechanism strings in `CAUSALITY_MECHANISM_RULES` are sufficient for MVP | Stage 2 prompt | If real-site testing reveals missing mechanisms, add to the list before shipping; the list is version-controllable |
 | A5 | `zod/v4` import (`from 'zod/v4'`) is the correct import path for zod 4.4.3 (as used in existing crawler code) | Pattern 4 | If import path changed, use `from 'zod'` instead |
 
@@ -859,14 +752,12 @@ await prisma.$transaction(async (tx) => {
 ## Sources
 
 ### Primary (HIGH confidence)
-- [platform.claude.com/docs/en/about-claude/models/overview](https://platform.claude.com/docs/en/about-claude/models/overview) — confirmed `claude-sonnet-4-6` as the correct model ID; 1M context window; 64k max output; $3/$15 per MTok
-- [platform.claude.com/docs/en/docs/build-with-claude/prompt-caching](https://platform.claude.com/docs/en/docs/build-with-claude/prompt-caching) — `cache_control: { type: "ephemeral" }` syntax; 1,024 token minimum for claude-sonnet-4-6; 5-minute TTL; cache hit = `cache_read_input_tokens` in usage
-- [platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools](https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools) — `tool_choice: { type: "tool", name: "..." }` pattern; tool definition schema; forced tool use pre-fills response (no text preamble)
+- [ai.google.dev/gemini-api/docs/models](https://ai.google.dev/gemini-api/docs/models) — confirmed `gemini-2.0-flash` as the correct model ID for free tier
+- [ai.google.dev/gemini-api/docs/function-calling](https://ai.google.dev/gemini-api/docs/function-calling) — `functionCallingConfig: { mode: FunctionCallingMode.ANY }` pattern; `functionDeclarations` schema; forced function calling
 - `crawler/src/lib/types.ts` — canonical signal type interfaces, read directly from source
 - `crawler/src/processor.ts` — confirmed TODO stub location (line 39), `_signals` variable name
 - `prisma/schema.prisma` — confirmed `Issue.severity: Int`, `CausalEdge.mechanism: String` (non-nullable), `Result.narrative: Json`
-- npm registry: `npm view @anthropic-ai/sdk version` → 0.98.0 (confirmed 2026-05-26)
-- slopcheck: `@anthropic-ai/sdk` → [OK]
+- slopcheck: `@google/generative-ai` → [OK]
 
 ### Secondary (MEDIUM confidence)
 - `crawler/package.json` — confirmed existing dependencies (zod 4.4.3, @prisma/adapter-neon, @neondatabase/serverless)
@@ -881,12 +772,12 @@ await prisma.$transaction(async (tx) => {
 ## Metadata
 
 **Confidence breakdown:**
-- Standard stack (@anthropic-ai/sdk): HIGH — npm registry + slopcheck confirmed
-- SDK API patterns (tool use, prompt caching): HIGH — official Anthropic docs verified
+- Standard stack (@google/generative-ai): HIGH — slopcheck confirmed; official Google AI SDK
+- SDK API patterns (function calling): HIGH — official Google AI docs verified
 - Signal input types: HIGH — read directly from `crawler/src/lib/types.ts`
 - DB schema field constraints: HIGH — read directly from `prisma/schema.prisma`
 - Processor stub integration point: HIGH — read directly from `crawler/src/processor.ts`
 - Scoring threshold values: LOW — reasonable defaults based on industry knowledge; must be user-confirmed
 
 **Research date:** 2026-05-26
-**Valid until:** 2026-07-26 (60 days — Anthropic SDK and model IDs are stable; schema is locked by D-17)
+**Valid until:** 2026-07-26 (60 days — Gemini SDK and model IDs are stable; schema is locked by D-17)

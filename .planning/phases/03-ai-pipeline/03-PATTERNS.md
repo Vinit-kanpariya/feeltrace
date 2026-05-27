@@ -15,7 +15,7 @@
 | `crawler/src/pipeline/stage2-reasoner.ts` | service | request-response (outbound LLM) | `crawler/src/extractors/network.ts` (async I/O service) | partial-match |
 | `crawler/src/pipeline/stage3-narrator.ts` | service | request-response (outbound LLM) | `crawler/src/extractors/network.ts` | partial-match |
 | `crawler/src/pipeline/run-pipeline.ts` | orchestrator / service | batch, CRUD write | `crawler/src/processor.ts` | role-match |
-| `crawler/src/lib/anthropic.ts` | utility / singleton | — | `crawler/src/lib/prisma.ts` | exact |
+| `crawler/src/lib/gemini.ts` | utility / singleton | — | `crawler/src/lib/prisma.ts` | exact |
 | `crawler/src/pipeline/stage1-scorer.test.ts` | test | — | `crawler/src/extractors/js.test.ts` | exact |
 | `crawler/src/pipeline/stage2-reasoner.test.ts` | test | — | `crawler/src/extractors/network.test.ts` | exact |
 | `crawler/src/pipeline/stage3-narrator.test.ts` | test | — | `crawler/src/extractors/dom.test.ts` | exact |
@@ -131,7 +131,7 @@ import { NetworkSignals, HAREntry } from '../lib/types'
 ```
 For reasoner, replace with:
 ```typescript
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenerativeAI, SchemaType, FunctionCallingMode } from '@google/generative-ai'
 import { z } from 'zod/v4'
 import type { ScoredIssue, EnrichedIssue, CausalEdgeCandidate } from './types'
 ```
@@ -155,7 +155,7 @@ export async function extractNetworkSignals(harPath: string): Promise<NetworkSig
   // ...
 }
 ```
-For reasoner: `export async function runStage2Reasoning(client: Anthropic, scoredIssues: ScoredIssue[]): Promise<{ enrichedIssues: EnrichedIssue[]; edges: CausalEdgeCandidate[] }>`
+For reasoner: `export async function runStage2Reasoning(client: GoogleGenerativeAI, scoredIssues: ScoredIssue[]): Promise<{ enrichedIssues: EnrichedIssue[]; edges: CausalEdgeCandidate[] }>`
 
 **Zod import pattern** (from `crawler/src/server.ts` line 12 — confirmed import path):
 ```typescript
@@ -182,7 +182,7 @@ For Stage 2 output validation: use `z.object({ enriched_issues: z.array(...), ca
 
 **Imports pattern:**
 ```typescript
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 import type { EnrichedIssue, CausalEdgeCandidate, NarrativeResult } from './types'
 ```
 
@@ -191,8 +191,8 @@ Same as stage2-reasoner. `NARRATOR_SYSTEM_PROMPT` is a module-level `const strin
 
 **Pattern — text extraction from response:**
 ```typescript
-// RESEARCH.md Pattern 3 (plain text response, no tool use):
-const text = response.content.find(b => b.type === 'text')?.text ?? ''
+// RESEARCH.md Pattern 3 (plain text response, no function calling):
+const text = result.response.text()
 return parseNarrativeOutput(text)
 ```
 `parseNarrativeOutput` is an exported pure function (co-located in the same file or extracted for testability) that splits on `[SUMMARY]`, `[PERCEIVED PERFORMANCE]`, `[TECHNICAL PERFORMANCE]`, `[RECOMMENDATIONS]` markers and returns `NarrativeResult`.
@@ -212,7 +212,7 @@ import { runDualViewportCrawl } from './browser'
 For run-pipeline:
 ```typescript
 import { prisma } from '../lib/prisma'
-import { getAnthropicClient } from '../lib/anthropic'
+import { getGeminiClient } from '../lib/gemini'
 import { scoreSignals } from './stage1-scorer'
 import { runStage2Reasoning } from './stage2-reasoner'
 import { runStage3Narration } from './stage3-narrator'
@@ -287,7 +287,7 @@ Key schema constraints from `crawler/prisma/schema.prisma` lines 63–75:
 
 ---
 
-### `crawler/src/lib/anthropic.ts` (utility, singleton)
+### `crawler/src/lib/gemini.ts` (utility, singleton)
 
 **Analog:** `crawler/src/lib/prisma.ts`
 
@@ -307,19 +307,19 @@ if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma
 }
 ```
-For Anthropic singleton, use the same lazy-init pattern but simpler (no adapter):
+For Gemini singleton, use the same lazy-init pattern but simpler (no adapter):
 ```typescript
 // RESEARCH.md Pattern 5
-import Anthropic from '@anthropic-ai/sdk'
-let _client: Anthropic | null = null
-export function getAnthropicClient(): Anthropic {
-  if (!_client) {
-    _client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+import { GoogleGenerativeAI } from '@google/generative-ai'
+let _client: GoogleGenerativeAI | null = null
+export function getGeminiClient(): GoogleGenerativeAI {
+  if (_client === null) {
+    _client = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? '')
   }
   return _client
 }
 ```
-Note: prisma.ts uses a module-level `const` with `global` guard; anthropic.ts uses a module-level `let` with null guard — both achieve lazy init. Use the `let _client` pattern for Anthropic since it does not need dev hot-reload preservation.
+Note: prisma.ts uses a module-level `const` with `global` guard; gemini.ts uses a module-level `let` with null guard — both achieve lazy init. Use the `let _client` pattern for Gemini since it does not need dev hot-reload preservation.
 
 ---
 
@@ -393,12 +393,12 @@ vi.mock('@upstash/qstash', () => {
   return { Receiver: MockReceiver }
 })
 ```
-For stage2 test: mock `@anthropic-ai/sdk` to return a fixture tool-use response without making live API calls:
+For stage2 test: mock `@google/generative-ai` to return a fixture function-call response without making live API calls:
 ```typescript
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { z } from 'zod/v4'
-// Test the zod schema and parseStage2Output directly — no Anthropic mock needed for pure validation tests
+// Test the zod schema and parseStage2Output directly — no Gemini mock needed for pure validation tests
 import { Stage2OutputSchema } from './stage2-reasoner'
 ```
 For validation-only tests (the primary Wave 0 scope), import and exercise the exported zod schema and parse function directly without mocking the SDK at all.
@@ -522,11 +522,11 @@ import { runAIPipeline } from './pipeline/run-pipeline'
   },
 ```
 
-**Addition:** `"@anthropic-ai/sdk": "0.98.0"` inserted into `"dependencies"` block, alphabetical position between `@hono/node-server` and `@neondatabase/serverless`.
+**Addition:** `"@google/generative-ai": "latest"` inserted into `"dependencies"` block, alphabetical position between `@hono/node-server` and `@neondatabase/serverless`.
 
 **Install command** (CLAUDE.md requirement — sfw prefix mandatory):
 ```bash
-sfw npm install @anthropic-ai/sdk
+sfw npm install @google/generative-ai
 ```
 
 ---
@@ -535,7 +535,7 @@ sfw npm install @anthropic-ai/sdk
 
 ### Singleton / Module-Level Client Init
 **Source:** `crawler/src/lib/prisma.ts` lines 15–27
-**Apply to:** `crawler/src/lib/anthropic.ts`
+**Apply to:** `crawler/src/lib/gemini.ts`
 - Lazy init via module-level `let` (null guard) or `global` guard
 - Read env var inside the factory function, not at module load
 - Export a getter function (not the client directly) to allow for test injection
@@ -592,7 +592,7 @@ Stage 1 and Stage 3 tests (pure functions, no mocks): use this minimal import.
 ```typescript
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 ```
-Stage 2 test (if mocking Anthropic SDK): add `vi` and `beforeEach`.
+Stage 2 test (if mocking Gemini SDK): add `vi` and `beforeEach`.
 
 ---
 
@@ -602,7 +602,7 @@ All files have close analogs in the codebase. No files require falling back to R
 
 | File | Role | Closest Match | Notes |
 |---|---|---|---|
-| `crawler/src/lib/anthropic.ts` | singleton | `crawler/src/lib/prisma.ts` | Exact pattern match; SDK singleton simpler than PrismaClient (no adapter needed) |
+| `crawler/src/lib/gemini.ts` | singleton | `crawler/src/lib/prisma.ts` | Exact pattern match; SDK singleton simpler than PrismaClient (no adapter needed) |
 
 ---
 
