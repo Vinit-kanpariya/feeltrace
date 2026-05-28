@@ -22,7 +22,7 @@ export function ShareButton() {
       className={`min-h-[44px] px-4 flex items-center gap-2 rounded-lg border text-sm font-medium transition-colors cursor-pointer ${
         copied
           ? 'bg-green-500/15 border-green-500/40 text-green-400'
-          : 'bg-transparent border-slate-600/80 text-slate-400 hover:border-slate-500 hover:text-slate-300'
+          : 'bg-white/[0.05] border-white/[0.10] text-slate-400 hover:bg-white/[0.09] hover:border-white/[0.15] hover:text-slate-300'
       }`}
     >
       {copied ? <Check size={15} /> : <Copy size={15} />}
