@@ -8,6 +8,7 @@ import { scoreSignals } from './stage1-scorer'
 import { scoreExternalSignals, scoreAxeViolations } from './stage1-external-scorer'
 import { runStage2Reasoning } from './stage2-reasoner'
 import { runStage3Narration } from './stage3-narrator'
+import { runVisualScanner } from './stage1-5-vision-scanner'
 import type { CrawlPass, TechProfile, ExternalSignals } from '../lib/types'
 
 /**
@@ -51,7 +52,16 @@ export async function runAIPipeline(
   scoredIssues.push(...scoreExternalSignals(externalSignals ?? { cwv: null, lighthouse: null }))
   // Append axe accessibility violation scores (desktop-only; axeViolations is undefined on mobile pass)
   scoredIssues.push(...scoreAxeViolations(signals.desktop.axeViolations ?? []))
-  console.log(`[pipeline] Job ${jobId}: ${scoredIssues.length} issues scored`)
+  console.log('[pipeline] Job ' + jobId + ': ' + scoredIssues.length + ' total issues scored')
+
+  // Stage 1.5: vision scanner — insert visual issues into scoredIssues BEFORE Stage 2
+  // so Stage 2 can reason about them and form causal edges with visual signals
+  const client = getGroqClient()
+  if (screenshot) {
+    const visualIssues = await runVisualScanner(client, screenshot)
+    scoredIssues.push(...visualIssues)
+    console.log('[pipeline] Job ' + jobId + ': Stage 1.5 complete — ' + visualIssues.length + ' visual issues')
+  }
 
   // Upload screenshot to Vercel Blob (non-blocking — proceeds even if upload fails)
   const screenshotUrl = screenshot ? await uploadScreenshot(jobId, screenshot) : null
@@ -86,7 +96,6 @@ export async function runAIPipeline(
   }
 
   // Stage 2: LLM reasoning — enriches scored issues with technical descriptions and causal edges
-  const client = getGroqClient()
   const { enrichedIssues, edges } = await runStage2Reasoning(client, scoredIssues)
   console.log(`[pipeline] Job ${jobId}: Stage 2 complete — ${edges.length} causal edges`)
 
