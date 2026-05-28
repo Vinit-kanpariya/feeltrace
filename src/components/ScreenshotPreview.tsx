@@ -2,15 +2,17 @@ import Image from 'next/image'
 
 export function ScreenshotPreview({ url, screenshotUrl }: { url: string; screenshotUrl: string }) {
   return (
-    <div className="rounded-xl bg-slate-800/50 border border-slate-700/60 overflow-hidden">
-      <div className="px-4 py-3 border-b border-slate-700/60 flex items-center gap-2.5">
-        {/* Browser chrome dots */}
-        <span className="w-2.5 h-2.5 rounded-full bg-slate-600" />
-        <span className="w-2.5 h-2.5 rounded-full bg-slate-600" />
-        <span className="w-2.5 h-2.5 rounded-full bg-slate-600" />
-        <span className="flex-1 text-center text-xs text-slate-500 font-mono truncate">{url}</span>
+    <div className="rounded-xl bg-[#131f35] border border-white/[0.08] overflow-hidden">
+      {/* Browser chrome */}
+      <div className="px-4 py-2.5 border-b border-white/[0.07] bg-[#1b2336] flex items-center gap-2.5">
+        <span className="w-2.5 h-2.5 rounded-full bg-slate-600 shrink-0" aria-hidden="true" />
+        <span className="w-2.5 h-2.5 rounded-full bg-slate-600 shrink-0" aria-hidden="true" />
+        <span className="w-2.5 h-2.5 rounded-full bg-slate-600 shrink-0" aria-hidden="true" />
+        <span className="flex-1 text-center text-[11px] text-[#475569] font-mono truncate bg-black/30 px-[10px] py-[3px] rounded mx-2">
+          {url}
+        </span>
       </div>
-      <div className="relative w-full aspect-video bg-slate-900">
+      <div className="relative w-full aspect-video bg-[#0d1929]">
         <Image
           src={screenshotUrl}
           alt={`Screenshot of ${url}`}
