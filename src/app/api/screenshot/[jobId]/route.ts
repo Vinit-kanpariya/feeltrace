@@ -16,9 +16,14 @@ export async function GET(
     return new NextResponse(null, { status: 404 })
   }
 
-  const blobRes = await fetch(result.screenshot_url, {
-    headers: { Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}` },
-  })
+  // SSRF guard: only fetch URLs that are Vercel Blob storage URLs.
+  // Vercel Blob private URLs carry auth in the URL itself — no Authorization header needed.
+  const BLOB_BASE = 'https://blob.vercel-storage.com/'
+  if (!result.screenshot_url.startsWith(BLOB_BASE)) {
+    return new NextResponse(null, { status: 400 })
+  }
+
+  const blobRes = await fetch(result.screenshot_url)
 
   if (!blobRes.ok) {
     return new NextResponse(null, { status: blobRes.status })
