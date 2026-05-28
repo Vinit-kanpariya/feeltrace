@@ -13,6 +13,8 @@ export interface ScoredIssue {
 // Stage 2 output: ScoredIssue enriched with LLM-generated technical description.
 export interface EnrichedIssue extends ScoredIssue {
   technical_description: string  // 1-3 sentence plain-English explanation from Stage 2 LLM
+  fix_suggestion: string          // NEW — AI-01: specific implementation action (not advisory)
+  severity_justification: string  // NEW — AI-02: estimated user impact in business terms
 }
 
 // Stage 2 output: a directed causality edge between two scored issues.

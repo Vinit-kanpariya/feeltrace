@@ -38,6 +38,18 @@ const SYSTEM_PROMPT = `You are a UX performance analysis engine. You receive a l
 
 5. Cap causal edges at 5 total. Prefer high-confidence edges.
 
+RULES FOR fix_suggestion:
+- Write a specific, imperative action: "Add loading=lazy to all <img> elements below the fold"
+- NOT advisory: never write "Consider...", "You might want to...", "You could...", "Try to...", "It is recommended..."
+- Reference the specific DOM element, CSS property, or metric involved
+- If the fix is a code change, name the specific attribute, property, or technique
+
+RULES FOR severity_justification:
+- Estimate concrete user impact: bounce rate, task completion, conversion
+- Use evidence-based framing: "Pages with LCP > 4s see 24% higher bounce rate (Google CrUX research)"
+- Connect the metric to a user action: "Users waiting 3+ seconds before seeing content are 3x more likely to abandon"
+- Do not just restate the threshold — explain the felt consequence
+
 ${CAUSALITY_MECHANISM_RULES}`
 
 // ---------------------------------------------------------------------------
@@ -59,8 +71,10 @@ const EMIT_ANALYSIS_TOOL: Groq.Chat.Completions.ChatCompletionTool = {
             properties: {
               index: { type: 'number', description: 'Zero-based index into the input scored_issues array' },
               technical_description: { type: 'string', description: 'Plain-English explanation (1-3 sentences)' },
+              fix_suggestion: { type: 'string', description: 'Specific implementation action to fix this issue (e.g. "Add loading=lazy to all below-fold <img> elements", NOT "Consider optimizing images")' },
+              severity_justification: { type: 'string', description: 'Estimated user impact in business terms (e.g. "Users on mobile connections will see a blank screen for 3+ seconds during LCP, increasing bounce rate by an estimated 20-30%")' },
             },
-            required: ['index', 'technical_description'],
+            required: ['index', 'technical_description', 'fix_suggestion', 'severity_justification'],
           },
         },
         causal_edges: {
@@ -92,6 +106,11 @@ export const Stage2OutputSchema = z.object({
   enriched_issues: z.array(z.object({
     index: z.number().int().min(0),
     technical_description: z.string().min(1).max(500),
+    fix_suggestion: z.string().min(1).max(300).refine(
+      (v) => !['Consider ', 'You might', 'You could', 'Try to', 'It is recommended'].some((p) => v.startsWith(p)),
+      { message: 'fix_suggestion must use imperative framing, not advisory language' },
+    ),
+    severity_justification: z.string().min(1).max(300),
   })),
   causal_edges: z.array(z.object({
     from_index: z.number().int().min(0),
@@ -131,6 +150,8 @@ export function parseStage2Output(
   const enrichedIssues: EnrichedIssue[] = validEnriched.map((item) => ({
     ...scoredIssues[item.index],
     technical_description: item.technical_description,
+    fix_suggestion: item.fix_suggestion,
+    severity_justification: item.severity_justification,
   }))
 
   // Filter: discard self-edges AND edges referencing scored issues that were not enriched
@@ -172,7 +193,7 @@ export async function runStage2Reasoning(
     ],
     tools: [EMIT_ANALYSIS_TOOL],
     tool_choice: { type: 'function', function: { name: 'emit_analysis' } },
-    max_tokens: 2048,
+    max_tokens: 4096,
   })
 
   const toolCall = response.choices[0]?.message?.tool_calls?.[0]
