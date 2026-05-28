@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: milestone
-status: Executed + code review fixed — human testing pending
-last_updated: "2026-05-28T09:45:53.768Z"
-last_activity: "2026-05-28 — All 3 waves merged (181/181 tests), 9 CR/WR findings fixed; human UAT: 07-HUMAN-UAT.md"
+status: Phase 8 planned — ready to execute
+last_updated: "2026-05-28T18:30:00.000Z"
+last_activity: "2026-05-28 — Phase 8 (Multi-page Crawl) planned: 6 plans in 4 waves"
 progress:
-  total_phases: 4
-  completed_phases: 3
-  total_plans: 9
+  total_phases: 5
+  completed_phases: 4
+  total_plans: 15
   completed_plans: 9
-  percent: 75
+  percent: 60
 ---
 
 # FeelTrace — Project State
 
-*Last updated: 2026-05-28 — UI overhaul complete (Tasks 2–8), Phase 7 UAT still pending*
+*Last updated: 2026-05-28 — Phase 8 (Multi-page Crawl) planned. 6 plans across 4 waves. Ready to execute.*
 
 ---
 
@@ -25,16 +25,16 @@ See: .planning/PROJECT.md (updated 2026-05-27)
 
 **Core value:** Turn raw frontend signals into human-centered explanations of why users feel friction — not metric scores, but narratives that connect technical causes to perceived user experience.
 
-**Current focus:** v1.1 Analysis Depth — richer signals, smarter AI reasoning, multi-page crawl.
+**Current focus:** v1.1 Analysis Depth — Phase 8 (Multi-page Crawl) is next.
 
 ---
 
 ## Current Position
 
-Phase: Phase 7 — AI Pipeline Depth
-Plan: All 4 plans complete — awaiting human UAT approval
-Status: Executed + code review fixed — human testing pending
-Last activity: 2026-05-28 — All 3 waves merged (181/181 tests), 9 CR/WR findings fixed; human UAT: 07-HUMAN-UAT.md
+Phase: Phase 8 — Multi-page Crawl (planned, ready to execute)
+Plans: 6 plans (08-01 through 08-06) across 4 waves
+Status: Ready to execute Phase 8
+Last activity: 2026-05-28 — Phase 8 planning complete; 6 plans verified and ready
 
 ---
 
@@ -54,6 +54,7 @@ Last activity: 2026-05-28 — All 3 waves merged (181/181 tests), 9 CR/WR findin
 | RAILWAY_CRAWLER_URL reused for QStash verify | Guarantees exact URL match; CRAWLER_PUBLIC_URL + /crawl caused 401s |
 | Groq (llama-3.3-70b-versatile) replaces Gemini as LLM provider | Gemini free-tier quota exhausted; Groq provides 14,400 RPD free with no billing required |
 | Causal edge indices must be remapped from scoredIssue space to enrichedIssue space | LLM returns indices into the scored array; DB write requires IDs of enriched issues; remap via signalKey |
+| Vercel private blob URL format is .private.blob.vercel-storage.com | SSRF guard and proxy updated accordingly; new jobs use access:'public' |
 
 ### Tech Debt Carried Forward from v1.0
 
@@ -70,14 +71,16 @@ None.
 
 ## Session Continuity
 
-**Next step:** Human UAT for Phase 7 — submit a live e-commerce URL, wait for Groq inference, then verify:
+**Next step:** Plan Phase 8 — Multi-page Crawl
 
-1. Each IssueCard shows "How to fix" row and "impact" row (where data non-empty)
-2. Narrative text references page-type (e.g. e-commerce benchmarks)
+Phase 8 goal: Auto-discover and crawl multiple pages, producing a unified site-wide analysis with per-page breakdown.
 
-Say "approved" to mark Phase 7 complete and plan Phase 8.
+Requirements:
+- CRAWL-01: Auto-discover + multi-page crawl (up to 5 pages, configurable)
+- CRAWL-02: Unified site-wide analysis (cross-page patterns)
+- CRAWL-03: Per-page breakdown in UI (individual issue cards per crawled URL)
 
-**UI overhaul complete** — commits 17ea02e through acc14d0. All 196 tests pass, 0 type errors, 0 lint errors.
+Run: `/gsd:plan-phase 8`
 
 **v1.0 archive:**
 

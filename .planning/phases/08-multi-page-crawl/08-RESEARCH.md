@@ -777,22 +777,25 @@ Produce a site-wide narrative that:
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should single-URL mode stay exactly as it is, or should it run through the multi-page code path with MAX_PAGES=1?**
    - What we know: The existing `processJob` directly calls `runDualViewportCrawl` + `runAIPipeline` (single-URL path). The regression requirement says "single-URL mode produces identical output to v1.0."
    - What's unclear: Whether "identical output" means the same code path or the same results. If we run single-URL through the multi-page code path (MAX_PAGES=1), results are identical but the code is simpler (one path).
    - Recommendation: Run all submissions through the multi-page code path with `MAX_PAGES` defaulting to 5. A submission that discovers 0 additional pages is functionally identical to single-URL mode. The `result.crawledPages.length === 0` guard in the UI hides the accordion. This avoids maintaining two code paths.
+   - **(RESOLVED: All submissions run through the unified multi-page code path in processor.ts. When link discovery returns 0 additional pages, the loop runs once — functionally identical to single-URL v1.0. No separate single-URL code path is maintained.)**
 
 2. **Where should cross-page patterns be persisted in the DB?**
    - What we know: `Result.narrative` is a `Json` column already storing `NarrativeResult`. Cross-page patterns could extend that JSON, or be stored in a new `Result.cross_page_patterns Json?` column.
    - What's unclear: Whether future phases will need to query patterns directly (e.g., filter jobs by pattern type). If yes, a separate column with proper typing is better.
    - Recommendation: Add `cross_page_patterns Json?` as a new nullable column on `Result`. Keeps the `NarrativeResult` shape clean and avoids breaking `NarrativeSection` component rendering.
+   - **(RESOLVED: A separate `Result.cross_page_patterns Json?` column is added in the 08-01 Prisma migration. Cross-page patterns are stored there, keeping `NarrativeResult` shape unchanged and `NarrativeSection` component rendering unaffected.)**
 
 3. **Should `PageAccordionSection` be open or closed by default?**
    - What we know: For 5 pages, all-open would show a lot of content. All-closed requires user interaction to see per-page issues.
    - What's unclear: The most useful default from a UX perspective.
    - Recommendation: The root page (page_index=0) is open by default; additional pages are closed. The root page's issues are most relevant to the user's starting URL.
+   - **(RESOLVED: root page (page_index === 0) rendered with defaultOpen={page.page_index === 0} in the results page; all additional pages start closed. Adopted in 08-06 Task 2.)**
 
 ---
 
