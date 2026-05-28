@@ -55,9 +55,11 @@ model Issue {
   signal_source         String
   severity              Int
   raw_evidence          String
-  technical_description String
-  causedBy              CausalEdge[] @relation("ToIssue")
-  causes                CausalEdge[] @relation("FromIssue")
+  technical_description  String
+  fix_suggestion         String  @default("") // AI-01 — concrete implementation action
+  severity_justification String  @default("") // AI-02 — user impact justification
+  causedBy               CausalEdge[] @relation("ToIssue")
+  causes                 CausalEdge[] @relation("FromIssue")
 }
 
 model CausalEdge {
