@@ -185,6 +185,8 @@ export default async function ResultsPage({
               severity: number
               raw_evidence: string
               technical_description: string
+              fix_suggestion: string
+              severity_justification: string
             }) => <IssueCard key={issue.id} issue={issue} />)
           )}
         </div>
