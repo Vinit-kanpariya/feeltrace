@@ -53,15 +53,15 @@ export function IssueCard({ issue }: IssueCardProps) {
           <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#1e3a5f] mb-1.5">
             Evidence
           </p>
-          <p className="text-[11px] font-mono text-[#64748b] leading-[1.7]">
-            <span className="text-[#1e3a5f] select-none">evidence  </span>
-            {issue.raw_evidence}
-          </p>
+          <div className="flex gap-1.5 text-[11px] font-mono leading-[1.7]">
+            <span className="text-[#1e3a5f] select-none w-16 shrink-0">evidence</span>
+            <span className="text-[#64748b]">{issue.raw_evidence}</span>
+          </div>
           {issue.severity_justification && (
-            <p className="text-[11px] font-mono text-[#64748b] leading-[1.7]">
-              <span className="text-[#1e3a5f] select-none">impact    </span>
-              {issue.severity_justification}
-            </p>
+            <div className="flex gap-1.5 text-[11px] font-mono leading-[1.7]">
+              <span className="text-[#1e3a5f] select-none w-16 shrink-0">impact</span>
+              <span className="text-[#64748b]">{issue.severity_justification}</span>
+            </div>
           )}
         </div>
 
