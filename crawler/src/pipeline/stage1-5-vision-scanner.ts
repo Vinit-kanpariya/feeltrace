@@ -84,6 +84,12 @@ export const VisualIssuesSchema = z.object({
 // ---------------------------------------------------------------------------
 
 export function parseVisualIssues(raw: Record<string, unknown>): ScoredIssue[] {
+  // Defensively cap the array before Zod validation so .max(5) never rejects
+  // valid-but-over-cap LLM responses — they are capped rather than discarded.
+  if (Array.isArray((raw as { visual_issues?: unknown }).visual_issues)) {
+    (raw as { visual_issues: unknown[] }).visual_issues =
+      (raw as { visual_issues: unknown[] }).visual_issues.slice(0, 5)
+  }
   const parsed = VisualIssuesSchema.parse(raw)
   return parsed.visual_issues.map((issue) => ({
     category: 'perceived-perf' as const,

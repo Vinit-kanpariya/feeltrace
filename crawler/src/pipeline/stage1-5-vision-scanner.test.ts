@@ -45,8 +45,8 @@ describe('parseVisualIssues', () => {
     expect(issue.viewport).toBe('desktop')
   })
 
-  it('caps output at 5 issues even when tool output contains 6 entries', () => {
-    const sixIssues = {
+  it('parseVisualIssues caps 7 input issues to 5 — does not throw', () => {
+    const sevenIssues = {
       visual_issues: [
         { description: 'Issue 1', location: 'header', severity: 2, visual_category: 'contrast' },
         { description: 'Issue 2', location: 'nav', severity: 1, visual_category: 'layout' },
@@ -54,10 +54,13 @@ describe('parseVisualIssues', () => {
         { description: 'Issue 4', location: 'footer', severity: 2, visual_category: 'spacing' },
         { description: 'Issue 5', location: 'cta area', severity: 4, visual_category: 'cta-visibility' },
         { description: 'Issue 6', location: 'sidebar', severity: 1, visual_category: 'other' },
+        { description: 'Issue 7', location: 'main', severity: 2, visual_category: 'contrast' },
       ],
     }
-    // VisualIssuesSchema.parse enforces max(5) — parsing 6 items should throw
-    expect(() => VisualIssuesSchema.parse(sixIssues)).toThrow()
+    // parseVisualIssues slices to 5 BEFORE Zod — should not throw and should return 5 items
+    expect(() => parseVisualIssues(sevenIssues)).not.toThrow()
+    const result = parseVisualIssues(sevenIssues)
+    expect(result).toHaveLength(5)
   })
 })
 
