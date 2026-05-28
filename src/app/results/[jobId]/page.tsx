@@ -74,7 +74,7 @@ export default async function ResultsPage({
 
     // Job exists but failed — render red error card (HTTP 200)
     return (
-      <div className="min-h-dvh bg-[#0f172a] flex flex-col">
+      <div className="min-h-dvh bg-[#060d1a] flex flex-col">
         <ResultsHeader />
         <main className="flex-1 max-w-4xl mx-auto w-full px-6 py-12">
           <div className="rounded-xl bg-red-950/40 border border-red-800/50 p-6">
@@ -96,7 +96,7 @@ export default async function ResultsPage({
   // failure signal — it is never cleared on retry and could be set on non-terminal jobs.
   if (result.job.status === 'failed') {
     return (
-      <div className="min-h-dvh bg-[#0f172a] flex flex-col">
+      <div className="min-h-dvh bg-[#060d1a] flex flex-col">
         <ResultsHeader />
         <main className="flex-1 max-w-4xl mx-auto w-full px-6 py-12">
           <div className="rounded-xl bg-red-950/40 border border-red-800/50 p-6">
@@ -140,16 +140,29 @@ export default async function ResultsPage({
         ? '1 issue ranked by UX impact'
         : `${issueCount} issues ranked by UX impact`
 
+  const analysedDate = result.job.created_at.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+
   return (
-    <div className="min-h-dvh bg-[#0f172a] flex flex-col">
+    <div className="min-h-dvh bg-[#060d1a] flex flex-col">
       <ResultsHeader />
 
       <main className="flex-1 max-w-4xl mx-auto w-full px-6 py-10">
         {/* Section 1 — Page title + ShareButton */}
         <div className="flex items-start justify-between gap-4 mb-8">
           <div>
-            <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">UX Analysis</p>
-            <h1 className="text-2xl font-bold text-slate-100 tracking-tight">{hostname}</h1>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-green-400 mb-1">
+              UX Analysis
+            </p>
+            <h1 className="text-[26px] font-bold text-slate-100 tracking-tight leading-tight">
+              {hostname}
+            </h1>
+            <p className="text-[13px] text-[#64748b] mt-1">
+              Analysed {analysedDate} · {issueCount === 0 ? 'no issues found' : issueCount === 1 ? '1 issue found' : `${issueCount} issues found`}
+            </p>
           </div>
           <div className="mt-1 shrink-0">
             <ShareButton />
