@@ -9,6 +9,8 @@ import { scoreExternalSignals, scoreAxeViolations } from './stage1-external-scor
 import { runStage2Reasoning } from './stage2-reasoner'
 import { runStage3Narration } from './stage3-narrator'
 import { runVisualScanner } from './stage1-5-vision-scanner'
+import { detectPageType } from './page-type-detector'
+import { buildBenchmarkContext } from './benchmark-context'
 import type { CrawlPass, TechProfile, ExternalSignals } from '../lib/types'
 
 /**
@@ -99,8 +101,13 @@ export async function runAIPipeline(
   const { enrichedIssues, edges } = await runStage2Reasoning(client, scoredIssues)
   console.log(`[pipeline] Job ${jobId}: Stage 2 complete — ${edges.length} causal edges`)
 
+  // Page-type detection and benchmark context (deterministic — no LLM call)
+  const pageType = detectPageType(techProfile, signals.desktop.domSignals)
+  const benchmarkContext = buildBenchmarkContext(externalSignals?.cwv ?? null, pageType)
+  console.log('[pipeline] Job ' + jobId + ': pageType=' + pageType)
+
   // Stage 3: LLM narration — generates plain-English narrative with perceived/technical split
-  const narrative = await runStage3Narration(client, enrichedIssues, edges)
+  const narrative = await runStage3Narration(client, enrichedIssues, edges, pageType, benchmarkContext)
   console.log(`[pipeline] Job ${jobId}: Stage 3 complete`)
 
   // Atomic DB transaction: Result + Issues (nested create) + CausalEdges
@@ -125,6 +132,8 @@ export async function runAIPipeline(
             severity: issue.severity,
             raw_evidence: issue.raw_evidence,
             technical_description: issue.technical_description,
+            fix_suggestion: issue.fix_suggestion,
+            severity_justification: issue.severity_justification,
           })),
         },
       },
