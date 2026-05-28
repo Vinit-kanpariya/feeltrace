@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-05-28T06:41:02.345Z",
+  "phase": "07",
+  "phase_name": "ai-pipeline-depth",
+  "phase_dir": ".planning/phases/07-ai-pipeline-depth",
+  "plan": null,
+  "task": null,
+  "total_tasks": null,
+  "status": "paused",
+  "context": "ad-hoc UI overhaul — superpowers plan, outside GSD phase system",
+  "completed_tasks": [
+    {"id": 1, "name": "Fix SSRF guard in screenshot proxy", "status": "done", "commit": "05a6715"}
+  ],
+  "remaining_tasks": [
+    {"id": 2, "name": "Redesign IssueCard with evidence block + fix callout", "status": "not_started"},
+    {"id": 3, "name": "NarrativeSection two-column layout", "status": "not_started"},
+    {"id": 4, "name": "Polish ScreenshotPreview chrome bar", "status": "not_started"},
+    {"id": 5, "name": "Update ShareButton ghost style", "status": "not_started"},
+    {"id": 6, "name": "Results page eyebrow, subtitle, background", "status": "not_started"},
+    {"id": 7, "name": "Dashboard page background", "status": "not_started"},
+    {"id": 8, "name": "Final verification", "status": "not_started"}
+  ],
+  "blockers": [],
+  "human_actions_pending": [],
+  "decisions": [
+    {"decision": "Use subagent-driven-development for execution", "rationale": "User chose option 1"},
+    {"decision": "Dark OLED + Data-Dense Dashboard design system", "rationale": "ui-ux-pro-max recommendation"},
+    {"decision": "Top-bar severity instead of left-border", "rationale": "More impactful visual hierarchy"},
+    {"decision": "Green callout for fix_suggestion", "rationale": "Visually distinct from evidence block"}
+  ],
+  "uncommitted_files": [".planning/STATE.md"],
+  "next_action": "Resume subagent-driven-development from Task 2: Redesign IssueCard. Run: /gsd:resume-work or open docs/superpowers/plans/2026-05-28-results-page-ui-overhaul.md and continue from Task 2.",
+  "context_notes": "UI overhaul plan fully written. Task 1 (SSRF guard) done and reviewed. Design spec approved by user. Visual companion server was running on localhost:52118 but not needed for remaining tasks."
+}
