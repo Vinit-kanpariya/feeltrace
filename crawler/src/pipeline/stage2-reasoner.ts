@@ -107,7 +107,12 @@ export const Stage2OutputSchema = z.object({
     index: z.number().int().min(0),
     technical_description: z.string().min(1).max(500),
     fix_suggestion: z.string().min(1).max(300).refine(
-      (v) => !['Consider ', 'You might', 'You could', 'Try to', 'It is recommended'].some((p) => v.startsWith(p)),
+      (v) => {
+        const lower = v.toLowerCase()
+        return !['consider ', 'you might', 'you could', 'try to', 'it is recommended'].some(
+          (p) => lower.startsWith(p),
+        )
+      },
       { message: 'fix_suggestion must use imperative framing, not advisory language' },
     ),
     severity_justification: z.string().min(1).max(300),

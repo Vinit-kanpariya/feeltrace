@@ -268,6 +268,37 @@ describe('Stage2OutputSchema — fix_suggestion and severity_justification', () 
     }
     expect(() => Stage2OutputSchema.parse(invalid)).toThrow()
   })
+
+  // Test F (WR-03): refine check is case-insensitive — lowercase advisory prefixes also rejected
+  it('Test F: throws when fix_suggestion starts with lowercase "consider "', () => {
+    const invalid = {
+      enriched_issues: [
+        {
+          index: 0,
+          technical_description: 'TTFB description.',
+          fix_suggestion: 'consider lazy-loading images to improve LCP.',
+          severity_justification: 'User impact description.',
+        },
+      ],
+      causal_edges: [],
+    }
+    expect(() => Stage2OutputSchema.parse(invalid)).toThrow()
+  })
+
+  it('Test G: throws when fix_suggestion starts with lowercase "you might"', () => {
+    const invalid = {
+      enriched_issues: [
+        {
+          index: 0,
+          technical_description: 'TTFB description.',
+          fix_suggestion: 'you might want to reduce render-blocking scripts.',
+          severity_justification: 'User impact description.',
+        },
+      ],
+      causal_edges: [],
+    }
+    expect(() => Stage2OutputSchema.parse(invalid)).toThrow()
+  })
 })
 
 describe('parseStage2Output — fix_suggestion and severity_justification propagation', () => {
