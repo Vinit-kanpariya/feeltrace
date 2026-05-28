@@ -1,6 +1,11 @@
+'use client'
+
+import { useState } from 'react'
 import Image from 'next/image'
 
 export function ScreenshotPreview({ url, screenshotUrl }: { url: string; screenshotUrl: string }) {
+  const [failed, setFailed] = useState(false)
+
   return (
     <div className="rounded-xl bg-[#131f35] border border-white/[0.08] overflow-hidden">
       {/* Browser chrome */}
@@ -13,14 +18,21 @@ export function ScreenshotPreview({ url, screenshotUrl }: { url: string; screens
         </span>
       </div>
       <div className="relative w-full aspect-video bg-[#0d1929]">
-        <Image
-          src={screenshotUrl}
-          alt={`Screenshot of ${url}`}
-          fill
-          className="object-cover object-top"
-          sizes="(max-width: 768px) 100vw, 896px"
-          unoptimized
-        />
+        {failed ? (
+          <div className="flex items-center justify-center h-full">
+            <span className="text-[12px] font-mono text-[#2d4a6e]">screenshot unavailable</span>
+          </div>
+        ) : (
+          <Image
+            src={screenshotUrl}
+            alt={`Screenshot of ${url}`}
+            fill
+            className="object-cover object-top"
+            sizes="(max-width: 768px) 100vw, 896px"
+            unoptimized
+            onError={() => setFailed(true)}
+          />
+        )}
       </div>
     </div>
   )

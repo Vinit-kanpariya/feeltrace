@@ -30,7 +30,7 @@ async function uploadScreenshot(jobId: string, screenshot: Buffer): Promise<stri
   try {
     console.log(`[pipeline] Job ${jobId}: uploading screenshot (${screenshot.length} bytes)…`)
     const { url } = await put(`screenshots/${jobId}.jpg`, screenshot, {
-      access: 'private',
+      access: 'public',
       contentType: 'image/jpeg',
     })
     console.log(`[pipeline] Job ${jobId}: screenshot uploaded → ${url}`)

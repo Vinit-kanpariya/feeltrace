@@ -25,82 +25,52 @@ export function IssueCard({ issue }: IssueCardProps) {
   const accent = SEVERITY_ACCENT[issue.severity] ?? SEVERITY_ACCENT[1]
 
   return (
-    <div className="rounded-[10px] bg-[#131f35] border border-white/[0.07] overflow-hidden mb-[10px] transition-colors duration-200 hover:bg-[#172240] hover:border-white/[0.13]">
-      {/* 3px severity top bar */}
-      <div style={{ height: '3px', background: accent }} aria-hidden="true" />
+    <div className="rounded-[10px] bg-[#131f35] border border-white/[0.07] overflow-hidden mb-3 transition-colors duration-200 hover:bg-[#172240] hover:border-white/[0.13] flex">
+      {/* Left severity bar */}
+      <div style={{ width: '4px', flexShrink: 0, background: accent }} aria-hidden="true" />
 
-      <div className="p-4">
-        {/* Meta row: badge + category left, signal tag right */}
-        <div className="flex items-center justify-between mb-3">
+      <div className="p-5 flex-1 min-w-0">
+        {/* Meta row */}
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
             <SeverityBadge severity={issue.severity} />
             <span className="text-[11px] font-medium text-[#475569]">
               {CATEGORY_LABELS[issue.category] ?? issue.category}
             </span>
           </div>
-          <span className="font-mono text-[10px] text-[#334155] bg-black/30 px-[7px] py-[2px] rounded">
+          <span className="font-mono text-[10px] text-[#334155] bg-black/30 px-[7px] py-[2px] rounded shrink-0">
             {issue.signal_source}
           </span>
         </div>
 
         {/* Description */}
-        <p className="text-[13px] text-slate-200 leading-[1.65] mb-3">
+        <p className="text-sm text-slate-200 leading-relaxed mb-4">
           {issue.technical_description}
         </p>
 
-        {/* Evidence block */}
-        <div className="rounded-lg bg-black/35 border border-white/[0.05] px-3 py-2.5 mb-3">
-          <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#1e3a5f] mb-1.5">
-            Evidence
-          </p>
-          <div className="flex gap-1.5 text-[11px] font-mono leading-[1.7]">
-            <span className="text-[#1e3a5f] select-none w-16 shrink-0">evidence</span>
-            <span className="text-[#64748b]">{issue.raw_evidence}</span>
+        {/* Evidence rows — plain labeled, no box */}
+        <div className={`space-y-1 font-mono text-[12px]${issue.fix_suggestion ? ' mb-4' : ''}`}>
+          <div className="flex gap-4">
+            <span className="text-[#2d4a6e] select-none w-[68px] shrink-0">evidence</span>
+            <span className="text-[#64748b] leading-relaxed">{issue.raw_evidence}</span>
           </div>
           {issue.severity_justification && (
-            <div className="flex gap-1.5 text-[11px] font-mono leading-[1.7]">
-              <span className="text-[#1e3a5f] select-none w-16 shrink-0">impact</span>
-              <span className="text-[#64748b]">{issue.severity_justification}</span>
+            <div className="flex gap-4">
+              <span className="text-[#2d4a6e] select-none w-[68px] shrink-0">impact</span>
+              <span className="text-[#64748b] leading-relaxed">{issue.severity_justification}</span>
             </div>
           )}
         </div>
 
-        {/* How to fix callout — rendered only when fix_suggestion is non-empty */}
+        {/* How to fix — clean left-border block */}
         {issue.fix_suggestion && (
-          <div
-            className="rounded-lg px-3 py-2.5 flex gap-2.5"
-            style={{
-              background: 'rgba(34,197,94,0.06)',
-              border: '1px solid rgba(34,197,94,0.18)',
-            }}
-          >
-            <div
-              className="w-5 h-5 rounded-[5px] flex items-center justify-center shrink-0 mt-0.5"
-              style={{ background: 'rgba(34,197,94,0.12)' }}
-              aria-hidden="true"
-            >
-              <svg
-                className="w-[11px] h-[11px] text-green-500"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                />
-              </svg>
-            </div>
-            <div>
-              <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#16a34a] mb-1">
-                How to fix
-              </p>
-              <p className="text-[12px] leading-[1.65]" style={{ color: '#86efac' }}>
-                {issue.fix_suggestion}
-              </p>
-            </div>
+          <div className="border-l-2 border-green-500/40 pl-3.5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-green-600 mb-1">
+              How to fix
+            </p>
+            <p className="text-[12px] text-[#86efac] leading-relaxed">
+              {issue.fix_suggestion}
+            </p>
           </div>
         )}
       </div>
