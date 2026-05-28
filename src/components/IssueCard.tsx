@@ -16,6 +16,8 @@ interface IssueCardProps {
     severity: number
     raw_evidence: string
     technical_description: string
+    fix_suggestion?: string        // AI-01 — may be "" on pre-Phase-7 rows
+    severity_justification?: string // AI-02 — may be "" on pre-Phase-7 rows
   }
 }
 
@@ -43,6 +45,18 @@ export function IssueCard({ issue }: IssueCardProps) {
             <span className="text-slate-600 select-none">evidence </span>
             <span className="text-slate-400">{issue.raw_evidence}</span>
           </p>
+          {issue.fix_suggestion && (
+            <p className="text-xs font-mono text-slate-500">
+              <span className="text-slate-600 select-none">fix </span>
+              <span className="text-slate-400">{issue.fix_suggestion}</span>
+            </p>
+          )}
+          {issue.severity_justification && (
+            <p className="text-xs font-mono text-slate-500">
+              <span className="text-slate-600 select-none">impact </span>
+              <span className="text-slate-400">{issue.severity_justification}</span>
+            </p>
+          )}
         </div>
       </div>
     </div>
