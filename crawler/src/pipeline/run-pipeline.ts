@@ -137,23 +137,39 @@ export async function runAIPipeline(
           })),
         },
       },
-      include: { issues: true },
+      include: { issues: { orderBy: { id: 'asc' } } },
     })
 
     // CausalEdges reference the newly created Issue IDs via fromIndex/toIndex
     // mechanism is NON-NULLABLE per schema — zod in stage2-reasoner ensures it is always present
     // explanation is NON-NULLABLE per schema — use ?? '' fallback (T-03-12 mitigation)
     if (edges.length > 0) {
+      // Build a Map keyed by insertion position so we are not relying on Postgres
+      // returning rows in insertion order (which is not guaranteed without ORDER BY).
+      // The orderBy: { id: 'asc' } on the include above makes the returned order
+      // deterministic, and this Map provides an additional bounds-checked lookup.
+      const issueIdByPosition = new Map<number, string>()
+      result.issues.forEach((issue, pos) => issueIdByPosition.set(pos, issue.id))
+
       await tx.causalEdge.createMany({
-        data: edges.map((edge) => ({
-          resultId: result.id,
-          fromIssueId: result.issues[edge.fromIndex].id,
-          toIssueId: result.issues[edge.toIndex].id,
-          relationship: edge.relationship,
-          confidence: edge.confidence,
-          mechanism: edge.mechanism,
-          explanation: edge.explanation ?? '',
-        })),
+        data: edges.map((edge) => {
+          const fromIssueId = issueIdByPosition.get(edge.fromIndex)
+          const toIssueId = issueIdByPosition.get(edge.toIndex)
+          if (!fromIssueId || !toIssueId) {
+            throw new Error(
+              `Edge references out-of-bounds index: from=${edge.fromIndex} to=${edge.toIndex} (issues.length=${result.issues.length})`,
+            )
+          }
+          return {
+            resultId: result.id,
+            fromIssueId,
+            toIssueId,
+            relationship: edge.relationship,
+            confidence: edge.confidence,
+            mechanism: edge.mechanism,
+            explanation: edge.explanation ?? '',
+          }
+        }),
       })
     }
   })
