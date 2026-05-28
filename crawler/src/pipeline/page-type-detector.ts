@@ -10,10 +10,11 @@ export function detectPageType(techProfile: TechProfile, domSignals: DOMSignals)
   if (techProfile.payments) return 'e-commerce'
 
   // SaaS dashboard: authenticated app-like structure
-  // Heuristic: many interactive elements, no analytics pixel, likely Next.js/React
+  // Heuristic: many interactive elements, likely Next.js/React.
+  // analytics.length constraint removed — real SaaS dashboards commonly use product analytics
+  // (Mixpanel, Amplitude, Segment) alongside their app.
   if (
     domSignals.interactiveElementCount > 20 &&
-    techProfile.analytics.length === 0 &&
     (techProfile.framework === 'Next.js' || techProfile.framework === 'React')
   ) return 'saas-dashboard'
 

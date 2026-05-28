@@ -86,6 +86,12 @@ describe('detectPageType', () => {
     expect(detectPageType(tech, dom)).toBe('saas-dashboard')
   })
 
+  it("returns 'saas-dashboard' even when analytics tools are present (e.g. Mixpanel + Next.js)", () => {
+    const tech = makeTechProfile({ framework: 'Next.js', analytics: ['Mixpanel', 'Segment'] })
+    const dom = makeDOMSignals({ interactiveElementCount: 30 })
+    expect(detectPageType(tech, dom)).toBe('saas-dashboard')
+  })
+
   it("returns 'blog' when semanticScore.articleCount is 3 (>2)", () => {
     const tech = makeTechProfile()
     const dom = makeDOMSignals({ articleCount: 3 })
