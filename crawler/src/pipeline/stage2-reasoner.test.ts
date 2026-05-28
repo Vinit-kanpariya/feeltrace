@@ -21,12 +21,27 @@ const TWO_ISSUES: ScoredIssue[] = [
   },
 ]
 
+// Helper: minimal valid enriched issue item (all required fields)
+function validEnrichedItem(index: number, overrides?: Partial<{
+  technical_description: string
+  fix_suggestion: string
+  severity_justification: string
+}>) {
+  return {
+    index,
+    technical_description: 'Default technical description for testing.',
+    fix_suggestion: 'Set Cache-Control: max-age=300 on all API responses to reduce TTFB.',
+    severity_justification: 'Users on mobile connections will see a blank screen for 2+ seconds, increasing bounce rate.',
+    ...overrides,
+  }
+}
+
 describe('Stage2OutputSchema', () => {
   it('passes for valid input with 2 enriched_issues and 2 causal_edges', () => {
     const valid = {
       enriched_issues: [
-        { index: 0, technical_description: 'TTFB of 2400ms means the server takes over 2 seconds before the first byte arrives.' },
-        { index: 1, technical_description: 'Over 500KB of JS must be parsed and compiled before interactivity.' },
+        validEnrichedItem(0, { technical_description: 'TTFB of 2400ms means the server takes over 2 seconds before the first byte arrives.' }),
+        validEnrichedItem(1, { technical_description: 'Over 500KB of JS must be parsed and compiled before interactivity.' }),
       ],
       causal_edges: [
         {
@@ -53,7 +68,7 @@ describe('Stage2OutputSchema', () => {
   it('fails parse when mechanism is not in PERMITTED_MECHANISMS', () => {
     const invalid = {
       enriched_issues: [
-        { index: 0, technical_description: 'Some description here.' },
+        validEnrichedItem(0, { technical_description: 'Some description here.' }),
       ],
       causal_edges: [
         {
@@ -80,7 +95,7 @@ describe('Stage2OutputSchema', () => {
     }
     const invalid = {
       enriched_issues: [
-        { index: 0, technical_description: 'Some description.' },
+        validEnrichedItem(0, { technical_description: 'Some description.' }),
       ],
       causal_edges: [edge, edge, edge, edge, edge, edge], // 6 items
     }
@@ -91,7 +106,7 @@ describe('Stage2OutputSchema', () => {
     const longDesc = 'A'.repeat(501)
     const invalid = {
       enriched_issues: [
-        { index: 0, technical_description: longDesc },
+        validEnrichedItem(0, { technical_description: longDesc }),
       ],
       causal_edges: [],
     }
@@ -103,8 +118,8 @@ describe('parseStage2Output', () => {
   it('removes self-edges where from_index === to_index', () => {
     const raw = {
       enriched_issues: [
-        { index: 0, technical_description: 'TTFB description.' },
-        { index: 1, technical_description: 'JS bundle description.' },
+        validEnrichedItem(0, { technical_description: 'TTFB description.' }),
+        validEnrichedItem(1, { technical_description: 'JS bundle description.' }),
       ],
       causal_edges: [
         {
@@ -134,8 +149,8 @@ describe('parseStage2Output', () => {
   it('discards enriched_issues with index >= scoredIssues.length', () => {
     const raw = {
       enriched_issues: [
-        { index: 0, technical_description: 'Valid description.' },
-        { index: 5, technical_description: 'Out-of-range index — should be discarded.' }, // index 5 but only 2 issues
+        validEnrichedItem(0, { technical_description: 'Valid description.' }),
+        validEnrichedItem(5, { technical_description: 'Out-of-range index — should be discarded.' }), // index 5 but only 2 issues
       ],
       causal_edges: [],
     }
@@ -147,8 +162,8 @@ describe('parseStage2Output', () => {
   it('retains valid non-self edges in output', () => {
     const raw = {
       enriched_issues: [
-        { index: 0, technical_description: 'TTFB causes users to wait.' },
-        { index: 1, technical_description: 'Large JS delays interactivity.' },
+        validEnrichedItem(0, { technical_description: 'TTFB causes users to wait.' }),
+        validEnrichedItem(1, { technical_description: 'Large JS delays interactivity.' }),
       ],
       causal_edges: [
         {
