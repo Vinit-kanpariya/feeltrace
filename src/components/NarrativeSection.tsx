@@ -13,7 +13,7 @@ export function NarrativeSection({ narrative }: { narrative: NarrativeResult }) 
       <div className="px-5 py-5 space-y-4">
         {/* Overview */}
         <div className="flex gap-4">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#334155] shrink-0 whitespace-nowrap w-[90px] mt-0.5">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#334155] shrink-0 whitespace-nowrap w-[120px] mt-0.5">
             Overview
           </span>
           <p className="text-[13px] text-[#94a3b8] leading-[1.65]">{narrative.summary}</p>
@@ -23,7 +23,7 @@ export function NarrativeSection({ narrative }: { narrative: NarrativeResult }) 
 
         {/* How it feels */}
         <div className="flex gap-4">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#334155] shrink-0 whitespace-nowrap w-[90px] mt-0.5">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#334155] shrink-0 whitespace-nowrap w-[120px] mt-0.5">
             How it feels
           </span>
           <p className="text-[13px] text-[#94a3b8] leading-[1.65]">{narrative.perceivedPerformance}</p>
@@ -33,7 +33,7 @@ export function NarrativeSection({ narrative }: { narrative: NarrativeResult }) 
 
         {/* What the data says */}
         <div className="flex gap-4">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#334155] shrink-0 whitespace-nowrap w-[90px] mt-0.5">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#334155] shrink-0 whitespace-nowrap w-[120px] mt-0.5">
             What the data says
           </span>
           <p className="text-[13px] text-[#94a3b8] leading-[1.65]">{narrative.technicalPerformance}</p>
@@ -43,7 +43,7 @@ export function NarrativeSection({ narrative }: { narrative: NarrativeResult }) 
 
         {/* Recommended actions */}
         <div className="flex gap-4 items-start">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#334155] shrink-0 whitespace-nowrap w-[90px] mt-0.5">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#334155] shrink-0 whitespace-nowrap w-[120px] mt-0.5">
             Recommended actions
           </span>
           <ul className="space-y-2 flex-1">
