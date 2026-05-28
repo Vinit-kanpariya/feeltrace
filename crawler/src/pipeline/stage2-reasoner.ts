@@ -201,7 +201,12 @@ export async function runStage2Reasoning(
     throw new Error('Stage 2: expected tool call not returned by model')
   }
 
-  const raw = JSON.parse(toolCall.function.arguments) as Record<string, unknown>
+  let raw: Record<string, unknown>
+  try {
+    raw = JSON.parse(toolCall.function.arguments) as Record<string, unknown>
+  } catch (err) {
+    throw new Error(`Stage 2: failed to parse tool call arguments — ${err instanceof Error ? err.message : err}`)
+  }
   console.log(`[pipeline] Stage 2: received function call, parsing output`)
   return parseStage2Output(raw, scoredIssues)
 }

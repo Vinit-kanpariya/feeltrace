@@ -57,12 +57,16 @@ export function parseNarrativeOutput(text: string): NarrativeResult {
       .filter((line) => line.length > 0)
   }
 
-  return {
-    summary: extractSection('[SUMMARY]'),
-    perceivedPerformance: extractSection('[PERCEIVED PERFORMANCE]'),
-    technicalPerformance: extractSection('[TECHNICAL PERFORMANCE]'),
-    recommendations: parseRecommendations(extractSection('[RECOMMENDATIONS]')),
+  const summary = extractSection('[SUMMARY]')
+  const perceivedPerformance = extractSection('[PERCEIVED PERFORMANCE]')
+  const technicalPerformance = extractSection('[TECHNICAL PERFORMANCE]')
+  const recommendations = parseRecommendations(extractSection('[RECOMMENDATIONS]'))
+
+  if (!summary && !perceivedPerformance && !technicalPerformance) {
+    console.warn('[pipeline] Stage 3: parseNarrativeOutput — all three narrative sections are empty; LLM may not have followed the marker format')
   }
+
+  return { summary, perceivedPerformance, technicalPerformance, recommendations }
 }
 
 export async function runStage3Narration(
