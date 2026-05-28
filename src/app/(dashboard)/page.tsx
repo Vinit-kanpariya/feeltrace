@@ -2,7 +2,7 @@ import { AnalyzeForm } from '@/components/AnalyzeForm'
 
 export default function HomePage() {
   return (
-    <div className="min-h-dvh bg-[#0f172a] flex flex-col">
+    <div className="min-h-dvh bg-[#060d1a] flex flex-col">
       {/* Header */}
       <header className="w-full max-w-5xl mx-auto px-6 py-5 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
