@@ -1,6 +1,7 @@
 // Stage 3: LLM narration — calls Groq for a plain-English narrative (AI-03, AI-04).
 import Groq from 'groq-sdk'
 import type { EnrichedIssue, CausalEdgeCandidate, NarrativeResult } from './types'
+import type { PageType } from './page-type-detector'
 
 const NARRATOR_SYSTEM_PROMPT = `You are a UX experience narrator. You receive a list of enriched UX issues and causal chains identified on a web page, and your job is to write a clear, human-centered narrative for a mixed audience of product managers, UX designers, and developers.
 
@@ -68,15 +69,28 @@ export async function runStage3Narration(
   client: Groq,
   enrichedIssues: EnrichedIssue[],
   edges: CausalEdgeCandidate[],
+  pageType: PageType,        // AI-03 — detected page type for narrative framing
+  benchmarkContext: string,  // AI-04 — CWV benchmark paragraph ('' when no CWV data)
 ): Promise<NarrativeResult> {
   console.log(`[pipeline] Stage 3: generating narrative for ${enrichedIssues.length} issues`)
+
+  const systemPrompt = NARRATOR_SYSTEM_PROMPT + '\n\n' +
+    '[PAGE TYPE AND CONTEXT]\n' +
+    (pageType !== 'unknown'
+      ? `This is a ${pageType}. Tailor your narrative framing, examples, and recommendations to this specific page type.`
+      : '') +
+    '\n\n[BENCHMARK COMPARISONS]\n' +
+    (benchmarkContext || '(No real-user CWV field data available for this URL — do not include benchmark comparisons.)') +
+    '\n\nWhen CWV benchmark context is provided:\n' +
+    '- Open the [TECHNICAL PERFORMANCE] section with the benchmark comparison (e.g. "Real user data shows LCP of 3.8s — 1.5× the 2.5s good threshold")\n' +
+    '- Connect metric values to business impact relevant to the page type'
 
   const userPrompt = `Generate UX narrative:\n\nIssues:\n${JSON.stringify(enrichedIssues, null, 2)}\n\nCausal chains:\n${JSON.stringify(edges, null, 2)}`
 
   const response = await client.chat.completions.create({
     model: 'llama-3.3-70b-versatile',
     messages: [
-      { role: 'system', content: NARRATOR_SYSTEM_PROMPT },
+      { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
     ],
     max_tokens: 1024,
