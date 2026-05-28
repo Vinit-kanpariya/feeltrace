@@ -89,6 +89,26 @@ Plans:
 **Goal:** Auto-discover and crawl multiple pages, producing a unified site-wide analysis with per-page breakdown
 **Depends on:** Phase 7 (richer per-page analysis makes the site-wide merge more meaningful)
 **Requirements:** CRAWL-01, CRAWL-02, CRAWL-03
+**Plans:** 6 plans
+
+**Wave 1** *(parallel — blockers)*
+- [ ] 08-01-PLAN.md — Prisma schema (CrawledPage + CrawledPageIssue + CrawledPageEdge models, migration), Phase 8 type contracts in types.ts, CrawlPass.internalLinks extension (CRAWL-01, CRAWL-02, CRAWL-03)
+- [ ] 08-02-PLAN.md — Wave 0 test stubs: browser.test.ts (extractInternalLinks) + site-wide-merger.test.ts (detectCrossPagePatterns + runSiteWideAnalysis) in RED state (CRAWL-01, CRAWL-02)
+
+**Wave 2** *(blocked on Wave 1 completion — parallel)*
+- [ ] 08-03-PLAN.md — browser.ts: extractInternalLinks() exported function + crawlWithViewport desktop pass extension (CRAWL-01)
+- [ ] 08-04-PLAN.md — run-pipeline.ts mode param + PipelineResult return; site-wide-merger.ts Stage 4 new file (CRAWL-02)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 08-05-PLAN.md — processor.ts multi-page loop, per-page isolation, Stage 4 call, atomic DB write (CRAWL-01, CRAWL-02)
+
+**Wave 4** *(blocked on Wave 1 schema + Wave 3 data shape)*
+- [ ] 08-06-PLAN.md — UI: results page crawledPages query + accordion + cross-page patterns block; PageAccordionSection Client Component (CRAWL-03)
+
+**Cross-cutting constraints:**
+- 08-01 migration MUST complete before 08-03, 08-04, 08-05, and 08-06 (Prisma client types flow from schema)
+- 08-02 test stubs MUST be in RED state before 08-03 and 08-04 begin (Nyquist Rule)
+- runAIPipeline mode='single' behavior is byte-for-byte unchanged (regression requirement)
 
 **Success criteria:**
 1. Submitting a URL triggers discovery of internal links and crawls up to 5 pages (configurable)
