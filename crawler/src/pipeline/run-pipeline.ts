@@ -100,6 +100,9 @@ export async function runAIPipeline(
   // Stage 2: LLM reasoning — enriches scored issues with technical descriptions and causal edges
   const { enrichedIssues, edges } = await runStage2Reasoning(client, scoredIssues)
   console.log(`[pipeline] Job ${jobId}: Stage 2 complete — ${edges.length} causal edges`)
+  if (enrichedIssues.length === 0) {
+    console.warn(`[pipeline] Job ${jobId}: Stage 2 returned 0 enriched issues from ${scoredIssues.length} scored — possible LLM index hallucination`)
+  }
 
   // Page-type detection and benchmark context (deterministic — no LLM call)
   const pageType = detectPageType(techProfile, signals.desktop.domSignals)
