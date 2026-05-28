@@ -134,9 +134,11 @@ export default async function ResultsPage({
   // Issue count sub-label (UI-SPEC copywriting contract)
   const issueCount = result.issues.length
   const issueLabel =
-    issueCount === 1
-      ? '1 issue ranked by UX impact'
-      : `${issueCount} issues ranked by UX impact`
+    issueCount === 0
+      ? ''
+      : issueCount === 1
+        ? '1 issue ranked by UX impact'
+        : `${issueCount} issues ranked by UX impact`
 
   return (
     <div className="min-h-dvh bg-[#0f172a] flex flex-col">
@@ -168,7 +170,7 @@ export default async function ResultsPage({
         <div className="mt-8">
           <div className="flex items-baseline gap-3 mb-4">
             <h2 className="text-base font-semibold text-slate-100">Issues Found</h2>
-            <span className="text-xs text-slate-500">{issueLabel}</span>
+            {issueLabel && <span className="text-xs text-slate-500">{issueLabel}</span>}
           </div>
           {result.issues.length === 0 ? (
             <div className="rounded-xl bg-slate-800/30 border border-slate-700/40 border-dashed p-6">
