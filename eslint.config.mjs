@@ -19,6 +19,8 @@ const eslintConfig = [
       "build/**",
       "next-env.d.ts",
       "src/generated/**",
+      "crawler/dist/**",
+      "crawler/src/generated/**",
       ".claude/**",
     ],
   },
