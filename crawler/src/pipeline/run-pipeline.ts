@@ -12,6 +12,7 @@ import { runVisualScanner } from './stage1-5-vision-scanner'
 import { detectPageType } from './page-type-detector'
 import { buildBenchmarkContext } from './benchmark-context'
 import type { CrawlPass, TechProfile, ExternalSignals } from '../lib/types'
+import type { PipelineResult } from './types'
 
 /**
  * Runs the full AI pipeline for a crawl job:
@@ -47,7 +48,8 @@ export async function runAIPipeline(
   screenshot: Buffer | null,
   techProfile: TechProfile,
   externalSignals: ExternalSignals | null,
-): Promise<void> {
+  mode: 'single' | 'multi' = 'single',
+): Promise<void | PipelineResult> {
   // Stage 1: deterministic scoring — no LLM, pure threshold rules
   const scoredIssues = scoreSignals(signals.mobile, signals.desktop)
   // Append external signal scores (CWV + Lighthouse from PSI)
@@ -80,14 +82,31 @@ export async function runAIPipeline(
 
   // Zero-issues path: skip Stage 2 + Stage 3 API calls entirely to avoid unnecessary spend
   if (scoredIssues.length === 0) {
+    const emptyNarrative = {
+      summary: 'No significant issues found. This page performs well across the measured signal categories.',
+      perceivedPerformance: '',
+      technicalPerformance: '',
+      recommendations: [] as string[],
+    }
+    if (mode === 'multi') {
+      const pageType = detectPageType(techProfile, signals.desktop.domSignals)
+      return {
+        enrichedIssues: [],
+        edges: [],
+        narrative: emptyNarrative,
+        screenshotUrl,
+        techProfile,
+        pageType,
+      }
+    }
     await prisma.result.create({
       data: {
         jobId,
         narrative: {
-          summary: 'No significant issues found. This page performs well across the measured signal categories.',
-          perceivedPerformance: '',
-          technicalPerformance: '',
-          recommendations: [],
+          summary: emptyNarrative.summary,
+          perceivedPerformance: emptyNarrative.perceivedPerformance,
+          technicalPerformance: emptyNarrative.technicalPerformance,
+          recommendations: emptyNarrative.recommendations,
         },
         screenshot_url: screenshotUrl,
         tech_stack: techStackJson,
@@ -112,6 +131,11 @@ export async function runAIPipeline(
   // Stage 3: LLM narration — generates plain-English narrative with perceived/technical split
   const narrative = await runStage3Narration(client, enrichedIssues, edges, pageType, benchmarkContext)
   console.log(`[pipeline] Job ${jobId}: Stage 3 complete`)
+
+  // Multi-mode: return PipelineResult without DB write (processor.ts handles the DB write)
+  if (mode === 'multi') {
+    return { enrichedIssues, edges, narrative, screenshotUrl, techProfile, pageType }
+  }
 
   // Atomic DB transaction: Result + Issues (nested create) + CausalEdges
   // Pattern: result.create with include: { issues: true } returns issue IDs needed for edges

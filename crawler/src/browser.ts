@@ -22,6 +22,33 @@ export function isPrivateHost(hostname: string): boolean {
   return false
 }
 
+export async function extractInternalLinks(page: Page, baseUrl: string): Promise<string[]> {
+  const origin = new URL(baseUrl).origin
+  const hrefs: (string | null)[] = await page.evaluate(() =>
+    Array.from(document.querySelectorAll('a[href]')).map((a) => a.getAttribute('href'))
+  )
+  const seen = new Set<string>()
+  const links: string[] = []
+  for (const href of hrefs) {
+    if (href == null) continue
+    if (href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) continue
+    let absolute: string
+    try {
+      absolute = new URL(href, baseUrl).href
+    } catch {
+      continue
+    }
+    // Strip fragment
+    const normalized = absolute.split('#')[0].replace(/\/$/, '') || absolute
+    if (!normalized.startsWith(origin)) continue
+    if (!normalized.startsWith('http://') && !normalized.startsWith('https://')) continue
+    if (seen.has(normalized)) continue
+    seen.add(normalized)
+    links.push(normalized)
+  }
+  return links
+}
+
 export async function waitForSpaHydration(page: Page, timeoutMs = 10_000): Promise<void> {
   await page.waitForLoadState('domcontentloaded')
   try {
@@ -70,6 +97,7 @@ async function crawlWithViewport(
 ): Promise<CrawlPass> {
   // Unique path per pass so parallel passes don't race on the same file
   const harPath = `/tmp/feeltrace-${jobId ?? Date.now()}-${options.isMobile ? 'mobile' : 'desktop'}.har`
+  let internalLinks: string[] = []
 
   const context: BrowserContext = await browser.newContext({
     viewport: { width: options.width, height: options.height },
@@ -180,6 +208,10 @@ async function crawlWithViewport(
         hasPaddle: !!w.Paddle,
       }
     }).catch(() => undefined)
+
+    // Link discovery — must be before context.close() (CRAWL-01)
+    internalLinks = await extractInternalLinks(page, url)
+    console.log('[browser] Discovered ' + internalLinks.length + ' internal links from ' + url)
   }
 
   await context.close() // flushes HAR to disk (must happen after coverage stops)
@@ -195,6 +227,7 @@ async function crawlWithViewport(
     screenshot,
     browserFingerprint,
     axeViolations,
+    internalLinks,
   }
 }
 

@@ -10,7 +10,7 @@ import { extractInternalLinks } from './browser'
 function makeMockPage(hrefs: (string | null)[]) {
   return {
     evaluate: vi.fn().mockResolvedValue(hrefs),
-  } as Parameters<typeof extractInternalLinks>[0]
+  } as unknown as Parameters<typeof extractInternalLinks>[0]
 }
 
 // ---------------------------------------------------------------------------
