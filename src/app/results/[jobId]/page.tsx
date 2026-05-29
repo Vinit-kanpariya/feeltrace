@@ -18,6 +18,7 @@ import type { TechProfile } from '@/types/tech'
 import { meetsCredibilityThreshold, buildGraphData } from '@/lib/graph-utils'
 import { NarrativeSection } from '@/components/NarrativeSection'
 import { IssueCard } from '@/components/IssueCard'
+import { PageAccordionSection } from '@/components/PageAccordionSection'
 import { CausalityGraph } from '@/components/CausalityGraph'
 import { GraphAbsent } from '@/components/GraphAbsent'
 import { ShareButton } from '@/components/ShareButton'
@@ -61,6 +62,13 @@ export default async function ResultsPage({
       job: true,
       issues: { orderBy: { severity: 'desc' } }, // DB-layer sort — not JS (CONTEXT.md)
       edges: true,
+      crawledPages: {                    // Phase 8: per-page breakdown
+        orderBy: { page_index: 'asc' },
+        include: {
+          issues: { orderBy: { severity: 'desc' } },
+          edges: true,
+        },
+      },
     },
   })
 
@@ -227,6 +235,54 @@ export default async function ResultsPage({
             <GraphAbsent />
           )}
         </div>
+
+        {/* Section 7a — Site-wide cross-page patterns (Phase 8 only) */}
+        {result.cross_page_patterns != null &&
+          Array.isArray(result.cross_page_patterns) &&
+          (result.cross_page_patterns as unknown[]).length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-base font-semibold text-slate-100 mb-1">Site-wide Patterns</h2>
+            <p className="text-sm text-slate-500 mb-4">Issues detected across multiple crawled pages</p>
+            <div className="space-y-2">
+              {(result.cross_page_patterns as unknown as Array<{
+                signal_source: string
+                page_count: number
+                worst_severity: number
+              }>).map((pattern, i) => (
+                <div
+                  key={i}
+                  className="rounded-lg bg-[#131f35] border border-white/[0.07] px-4 py-3 flex items-center gap-3"
+                >
+                  <span className="font-mono text-[11px] text-[#64748b] bg-black/30 px-2 py-0.5 rounded shrink-0">
+                    {pattern.signal_source}
+                  </span>
+                  <span className="text-sm text-slate-400">
+                    detected on {pattern.page_count} page{pattern.page_count !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Section 7b — Per-page accordion breakdown (Phase 8 only) */}
+        {result.crawledPages.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-base font-semibold text-slate-100 mb-1">Per-page Breakdown</h2>
+            <p className="text-sm text-slate-500 mb-4">
+              {result.crawledPages.length} page{result.crawledPages.length !== 1 ? 's' : ''} crawled
+            </p>
+            <div className="space-y-3">
+              {result.crawledPages.map((page) => (
+                <PageAccordionSection
+                  key={page.id}
+                  page={page}
+                  defaultOpen={page.page_index === 0}
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </main>
 
       <footer className="px-6 py-5 border-t border-slate-800/80">
