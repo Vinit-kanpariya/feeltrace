@@ -24,8 +24,10 @@
 
 ### Multi-page Crawl
 
-- [ ] **CRAWL-01**: System auto-discovers internal links from the root URL and crawls up to a configurable max number of pages (default: 5)
-- [ ] **CRAWL-02**: System merges signals from all crawled pages into a unified site-wide analysis with cross-page pattern detection
+- [x] **CRAWL-01
+**: System auto-discovers internal links from the root URL and crawls up to a configurable max number of pages (default: 5)
+- [x] **CRAWL-02
+**: System merges signals from all crawled pages into a unified site-wide analysis with cross-page pattern detection
 - [ ] **CRAWL-03**: Results UI shows per-page breakdowns alongside the site-wide summary
 
 ### Tech Debt (v1.0 Carried Forward)
