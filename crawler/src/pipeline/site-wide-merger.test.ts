@@ -4,11 +4,16 @@ import { detectCrossPagePatterns, runSiteWideAnalysis } from './site-wide-merger
 import type { PageAnalysisResult } from './types'
 
 // ---------------------------------------------------------------------------
-// Groq mock — mirrors the vi.mock pattern from stage1-5-vision-scanner.test.ts.
-// Intercepts groq-sdk so runSiteWideAnalysis does not attempt a real network call.
-// The mock returns a minimal narrative string that parseNarrativeOutput can parse.
+// Groq mock — intercepts getGroqClient() so runSiteWideAnalysis does not make
+// real network calls. Uses the same groq-client mock pattern as run-pipeline tests.
+// Content is inlined in the factory to avoid vitest vi.mock() hoisting TDZ issues.
 // ---------------------------------------------------------------------------
-const MOCK_NARRATIVE_CONTENT = `
+vi.mock('../lib/groq-client', () => {
+  const mockCreate = vi.fn().mockResolvedValue({
+    choices: [
+      {
+        message: {
+          content: `
 [SUMMARY]
 The site has performance issues affecting multiple pages.
 
@@ -21,26 +26,16 @@ Render-blocking scripts detected on multiple pages.
 [RECOMMENDATIONS]
 - Defer non-critical JavaScript
 - Enable CDN caching
-`
-
-vi.mock('groq-sdk', () => {
-  const mockCreate = vi.fn().mockResolvedValue({
-    choices: [
-      {
-        message: {
-          content: MOCK_NARRATIVE_CONTENT,
+`,
         },
       },
     ],
   })
-  const MockGroq = vi.fn().mockImplementation(() => ({
-    chat: {
-      completions: {
-        create: mockCreate,
-      },
-    },
-  }))
-  return { default: MockGroq }
+  return {
+    getGroqClient: vi.fn().mockReturnValue({
+      chat: { completions: { create: mockCreate } },
+    }),
+  }
 })
 
 // ---------------------------------------------------------------------------
