@@ -123,6 +123,15 @@ export default async function ResultsPage({
   const narrative = result.narrative as unknown as NarrativeResult
   const techProfile = result.tech_stack ? (result.tech_stack as unknown as TechProfile) : null
 
+  // Phase 8: for multi-page jobs, top-level result.issues / result.edges are empty.
+  // All issues and edges live in crawledPages[]. Fall back to root page (page_index=0)
+  // so Sections 4 and 6 render meaningful data for both single-page and multi-page results.
+  const rootPage = result.crawledPages.find(p => p.page_index === 0) ?? null
+  const displayIssues = result.issues.length > 0 ? result.issues : (rootPage?.issues ?? [])
+  const displayEdges  = result.edges.length  > 0 ? result.edges  : (rootPage?.edges  ?? [])
+  // Screenshot: prefer Result-level URL (set by writeCrawlResults), fall back to root CrawledPage
+  const screenshotUrl = result.screenshot_url ?? rootPage?.screenshot_url ?? null
+
   // Extract hostname for page title (UI-SPEC copywriting: "UX Analysis: {hostname}")
   // CR-01: new URL() throws TypeError on malformed URLs (e.g. bare hostnames without scheme).
   // Fall back to the raw string rather than crashing the Server Component.
@@ -134,13 +143,13 @@ export default async function ResultsPage({
   }
 
   // Graph credibility check — must meet threshold before rendering React Flow canvas
-  const showGraph = meetsCredibilityThreshold(result.edges)
+  const showGraph = meetsCredibilityThreshold(displayEdges)
   const { nodes, edges: graphEdges } = showGraph
-    ? buildGraphData(result.issues, result.edges)
+    ? buildGraphData(displayIssues, displayEdges)
     : { nodes: [], edges: [] }
 
   // Issue count sub-label (UI-SPEC copywriting contract)
-  const issueCount = result.issues.length
+  const issueCount = displayIssues.length
   const issueLabel =
     issueCount === 0
       ? ''
@@ -178,7 +187,7 @@ export default async function ResultsPage({
         </div>
 
         {/* Section 2 — Screenshot (when available) */}
-        {result.screenshot_url && (
+        {screenshotUrl && (
           <div className="mb-8">
             <ScreenshotPreview url={result.job.url} screenshotUrl={`/api/screenshot/${jobId}`} />
           </div>
@@ -193,7 +202,7 @@ export default async function ResultsPage({
             <h2 className="text-base font-semibold text-slate-100">Issues Found</h2>
             {issueLabel && <span className="text-xs text-slate-500">{issueLabel}</span>}
           </div>
-          {result.issues.length === 0 ? (
+          {displayIssues.length === 0 ? (
             <div className="rounded-xl bg-slate-800/30 border border-slate-700/40 border-dashed p-6">
               <p className="text-sm font-semibold text-slate-300 mb-1">No issues detected</p>
               <p className="text-sm text-slate-500">
@@ -201,7 +210,7 @@ export default async function ResultsPage({
               </p>
             </div>
           ) : (
-            result.issues.map((issue: {
+            displayIssues.map((issue: {
               id: string
               category: string
               signal_source: string
