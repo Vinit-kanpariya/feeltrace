@@ -36,15 +36,17 @@ model Job {
 }
 
 model Result {
-  id             String       @id @default(cuid())
-  jobId          String       @unique
-  job            Job          @relation(fields: [jobId], references: [id])
-  narrative      Json
-  screenshot_url String?
-  tech_stack     Json?
-  issues         Issue[]
-  edges          CausalEdge[]
-  created_at     DateTime     @default(now())
+  id                   String        @id @default(cuid())
+  jobId                String        @unique
+  job                  Job           @relation(fields: [jobId], references: [id])
+  narrative            Json
+  screenshot_url       String?
+  tech_stack           Json?
+  issues               Issue[]
+  edges                CausalEdge[]
+  crawledPages         CrawledPage[]
+  cross_page_patterns  Json?         // Phase 8 — cross-page pattern array
+  created_at           DateTime      @default(now())
 }
 
 model Issue {
@@ -74,4 +76,51 @@ model CausalEdge {
   confidence   String
   mechanism    String // NON-NULLABLE — schema-level enforcement (D-17); Prisma rejects any create without this field
   explanation  String
+}
+
+model CrawledPage {
+  id             String              @id @default(cuid())
+  resultId       String
+  result         Result              @relation(fields: [resultId], references: [id])
+  url            String
+  page_index     Int
+  narrative      Json
+  screenshot_url String?
+  tech_stack     Json?
+  issues         CrawledPageIssue[]
+  edges          CrawledPageEdge[]
+  created_at     DateTime            @default(now())
+
+  @@index([resultId])
+}
+
+// SYNC: keep in sync with Issue model
+model CrawledPageIssue {
+  id                     String            @id @default(cuid())
+  crawledPageId          String
+  crawledPage            CrawledPage       @relation(fields: [crawledPageId], references: [id])
+  category               String
+  signal_source          String
+  severity               Int
+  raw_evidence           String
+  technical_description  String
+  fix_suggestion         String            @default("")
+  severity_justification String            @default("")
+  causedBy               CrawledPageEdge[] @relation("ToCrawledPageIssue")
+  causes                 CrawledPageEdge[] @relation("FromCrawledPageIssue")
+}
+
+// SYNC: keep in sync with CausalEdge model
+model CrawledPageEdge {
+  id            String           @id @default(cuid())
+  crawledPageId String
+  crawledPage   CrawledPage      @relation(fields: [crawledPageId], references: [id])
+  fromIssueId   String
+  fromIssue     CrawledPageIssue @relation("FromCrawledPageIssue", fields: [fromIssueId], references: [id])
+  toIssueId     String
+  toIssue       CrawledPageIssue @relation("ToCrawledPageIssue", fields: [toIssueId], references: [id])
+  relationship  String
+  confidence    String
+  mechanism     String // NON-NULLABLE — schema-level enforcement (D-17); Prisma rejects any create without this field
+  explanation   String
 }
