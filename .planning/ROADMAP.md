@@ -92,10 +92,10 @@ Plans:
 **Plans:** 6 plans
 
 **Wave 1** *(foundation)*
-- [ ] 08-01-PLAN.md — Prisma schema (CrawledPage + CrawledPageIssue + CrawledPageEdge models, migration), Phase 8 type contracts in types.ts, CrawlPass.internalLinks extension (CRAWL-01, CRAWL-02, CRAWL-03)
+- [x] 08-01-PLAN.md — Prisma schema (CrawledPage + CrawledPageIssue + CrawledPageEdge models, migration), Phase 8 type contracts in types.ts, CrawlPass.internalLinks extension (CRAWL-01, CRAWL-02, CRAWL-03)
 
 **Wave 2** *(blocked on Wave 1 completion — parallel)*
-- [ ] 08-02-PLAN.md — Wave 0 test stubs: browser.test.ts (extractInternalLinks) + site-wide-merger.test.ts + results page accordion tests in RED state (CRAWL-01, CRAWL-02, CRAWL-03)
+- [x] 08-02-PLAN.md — Wave 0 test stubs: browser.test.ts (extractInternalLinks) + site-wide-merger.test.ts + results page accordion tests in RED state (CRAWL-01, CRAWL-02, CRAWL-03)
 - [ ] 08-03-PLAN.md — browser.ts: extractInternalLinks() exported function + crawlWithViewport desktop pass extension (CRAWL-01)
 - [ ] 08-04-PLAN.md — run-pipeline.ts mode param + PipelineResult return; site-wide-merger.ts Stage 4 new file (CRAWL-02)
 
