@@ -70,6 +70,8 @@ async function writeCrawlResults(
   allPageResults: PageAnalysisResult[],
   siteWide: SiteWideNarrative,
 ): Promise<void> {
+  // Neon interactive transactions default to 5s — multi-page writes (5 pages × issues × edges)
+  // can exceed that. 30s gives ample headroom while keeping a hard cap against runaway writes.
   await prisma.$transaction(async (tx) => {
     // Cast narrative and crossPagePatterns to Prisma Json types via unknown intermediate.
     // These are plain serialisable objects; the double-cast is safe here.
@@ -142,7 +144,7 @@ async function writeCrawlResults(
         })
       }
     }
-  })
+  }, { timeout: 30_000 })
 }
 
 export async function processJob(jobId: string, url: string): Promise<void> {
