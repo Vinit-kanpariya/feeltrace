@@ -1,5 +1,8 @@
 // Phase 3 AI pipeline type contracts. Source: .planning/phases/03-ai-pipeline/03-RESEARCH.md
 
+import type { TechProfile } from '../lib/types'
+import type { PageType } from './page-type-detector'
+
 // Stage 1 output: a single scored issue from deterministic threshold rules.
 // Severity: 4=Critical, 3=High, 2=Medium, 1=Low — maps to Issue.severity Int in Prisma schema.
 export interface ScoredIssue {
@@ -63,3 +66,44 @@ export const PERMITTED_MECHANISMS = [
   'excessive-css-inflates-render-blocking',
   'third-party-scripts-contend-bandwidth',
 ] as const
+
+// Phase 8: multi-page crawl types
+
+/** Structured result from a single-page pipeline run — consumed by run-pipeline.ts and processor.ts */
+export interface PipelineResult {
+  enrichedIssues: EnrichedIssue[]
+  edges: CausalEdgeCandidate[]
+  narrative: NarrativeResult
+  screenshotUrl: string | null
+  techProfile: TechProfile
+  pageType: PageType
+}
+
+/** Per-page analysis result produced by the multi-page crawler — consumed by site-wide-merger.ts */
+export interface PageAnalysisResult {
+  url: string
+  pageIndex: number
+  enrichedIssues: EnrichedIssue[]
+  edges: CausalEdgeCandidate[]
+  narrative: NarrativeResult
+  screenshotUrl: string | null
+  techProfile: TechProfile
+  pageType: PageType
+  // Populated for page 0 (root page) only; empty array for all subsequent pages
+  discoveredLinks: string[]
+}
+
+/** A cross-page pattern detected across multiple crawled pages */
+export interface CrossPagePattern {
+  signal_source: string
+  page_count: number
+  worst_severity: number
+  affected_urls: string[]
+  representative_evidence: string
+}
+
+/** Site-wide narrative aggregated from all per-page analyses */
+export interface SiteWideNarrative {
+  narrative: NarrativeResult
+  crossPagePatterns: CrossPagePattern[]
+}

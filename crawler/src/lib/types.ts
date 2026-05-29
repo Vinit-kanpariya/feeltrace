@@ -110,6 +110,8 @@ export interface CrawlPass {
   browserFingerprint?: BrowserFingerprint
   // Populated by Plan 06-02 (axe accessibility scanner)
   axeViolations?: AxeViolation[]
+  // Phase 8 — desktop pass only; populated by extractInternalLinks() in browser.ts
+  internalLinks?: string[]
 }
 
 // Raw browser-context evaluation result — captured before page closes
