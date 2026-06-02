@@ -33,7 +33,10 @@ export async function middleware(
   // Pitfall 3: request.ip is undefined in local dev — fall back to 127.0.0.1
   // Note: request.ip exists at runtime on Vercel Edge but is not in the Next.js 15 type
   // definition. Cast to access it safely.
-  const ip = (request as NextRequest & { ip?: string }).ip ?? '127.0.0.1'
+  const ip =
+    (request as NextRequest & { ip?: string }).ip ??
+    request.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
+    '127.0.0.1'
 
   // Check hourly limit first (stricter constraint — D-06)
   const hourly = await hourlyLimiter.limit(ip)
