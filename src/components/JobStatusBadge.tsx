@@ -20,8 +20,8 @@ function stepIndex(status: JobStatus): number {
 // Poll faster while queued (transitions quickly), slower during long-running phases.
 // crawling lasts ~50s, analyzing ~20s — no need to hammer the API every 2s.
 function pollInterval(status: JobStatus): number {
-  if (status === 'pending') return 2_000
-  if (status === 'crawling') return 5_000
+  if (status === 'pending') return 3_000
+  if (status === 'crawling') return 10_000
   return 3_000
 }
 
