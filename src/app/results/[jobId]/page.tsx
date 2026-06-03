@@ -129,9 +129,6 @@ export default async function ResultsPage({
   const rootPage = result.crawledPages.find(p => p.page_index === 0) ?? null
   const displayIssues = result.issues.length > 0 ? result.issues : (rootPage?.issues ?? [])
   const displayEdges  = result.edges.length  > 0 ? result.edges  : (rootPage?.edges  ?? [])
-  // Screenshot: prefer Result-level URL (set by writeCrawlResults), fall back to root CrawledPage
-  const screenshotUrl = result.screenshot_url ?? rootPage?.screenshot_url ?? null
-
   // Extract hostname for page title (UI-SPEC copywriting: "UX Analysis: {hostname}")
   // CR-01: new URL() throws TypeError on malformed URLs (e.g. bare hostnames without scheme).
   // Fall back to the raw string rather than crashing the Server Component.
@@ -186,12 +183,10 @@ export default async function ResultsPage({
           </div>
         </div>
 
-        {/* Section 2 — Screenshot (when available) */}
-        {screenshotUrl && (
-          <div className="mb-8">
-            <ScreenshotPreview url={result.job.url} screenshotUrl={`/api/screenshot/${jobId}`} />
-          </div>
-        )}
+        {/* Section 2 — Screenshot */}
+        <div className="mb-8">
+          <ScreenshotPreview url={result.job.url} screenshotUrl={`/api/screenshot/${jobId}`} />
+        </div>
 
         {/* Section 3 — Narrative */}
         <NarrativeSection narrative={narrative} />
