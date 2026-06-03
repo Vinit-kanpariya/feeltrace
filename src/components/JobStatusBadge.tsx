@@ -17,6 +17,14 @@ function stepIndex(status: JobStatus): number {
   return i === -1 ? 0 : i
 }
 
+// Poll faster while queued (transitions quickly), slower during long-running phases.
+// crawling lasts ~50s, analyzing ~20s — no need to hammer the API every 2s.
+function pollInterval(status: JobStatus): number {
+  if (status === 'pending') return 2_000
+  if (status === 'crawling') return 5_000
+  return 3_000
+}
+
 export function JobStatusBadge({ jobId }: { jobId: string }) {
   const [status, setStatus] = useState<JobStatus>('pending')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -40,7 +48,7 @@ export function JobStatusBadge({ jobId }: { jobId: string }) {
       } catch {
         // network hiccup — retry on next tick
       }
-    }, 2000)
+    }, pollInterval(status))
 
     return () => clearInterval(interval)
   }, [jobId, status, router])
