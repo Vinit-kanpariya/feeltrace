@@ -49,7 +49,7 @@ export async function extractInternalLinks(page: Page, baseUrl: string): Promise
   return links
 }
 
-export async function waitForSpaHydration(page: Page, timeoutMs = 10_000): Promise<void> {
+export async function waitForSpaHydration(page: Page, timeoutMs = 5_000): Promise<void> {
   await page.waitForLoadState('domcontentloaded')
   try {
     await page.waitForFunction(
@@ -71,7 +71,7 @@ export async function waitForSpaHydration(page: Page, timeoutMs = 10_000): Promi
   } catch {
     console.log('[hydration] waitForFunction timed out — proceeding')
   }
-  await page.waitForTimeout(500)
+  await page.waitForTimeout(200)
 }
 
 interface ThrottleOptions {

@@ -7,8 +7,8 @@ import type { PageAnalysisResult, SiteWideNarrative } from './pipeline/types'
 
 // MAX_CRAWL_PAGES defaults to 5 via env; hard cap is 10 (T-08-12 DoS mitigation)
 const MAX_PAGES = Math.min(parseInt(process.env.MAX_CRAWL_PAGES ?? '5', 10), 10)
-const PER_PAGE_TIMEOUT_MS = 90_000  // 90 seconds per page (T-08-13 mitigation)
-const TOTAL_CRAWL_TIMEOUT_MS = 480_000  // 8 minutes total — declared for documentation; per-page timeouts provide effective budget
+const PER_PAGE_TIMEOUT_MS = 150_000  // 150 seconds per page — dual-viewport parallel crawl + LLM pipeline
+// Total crawl budget: ~8 minutes — per-page timeouts (PER_PAGE_TIMEOUT_MS × MAX_PAGES) provide effective enforcement
 
 /** Race a promise against a timeout reject. */
 function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
