@@ -248,33 +248,36 @@ export async function runDualViewportCrawl(
   })
 
   try {
-    const mobile = await crawlWithViewport(
-      browser,
-      url,
-      {
-        width: 375,
-        height: 812,
-        isMobile: true,
-        hasTouch: true,
-        throttle: MOBILE_THROTTLE,
-        viewport: 'mobile',
-      },
-      jobId
-    )
-
-    const desktop = await crawlWithViewport(
-      browser,
-      url,
-      {
-        width: 1440,
-        height: 900,
-        isMobile: false,
-        hasTouch: false,
-        throttle: null,
-        viewport: 'desktop',
-      },
-      jobId
-    )
+    // Run mobile and desktop passes concurrently — each creates its own BrowserContext
+    // so they don't share state. HAR paths are unique per pass (-mobile/-desktop suffix).
+    const [mobile, desktop] = await Promise.all([
+      crawlWithViewport(
+        browser,
+        url,
+        {
+          width: 375,
+          height: 812,
+          isMobile: true,
+          hasTouch: true,
+          throttle: MOBILE_THROTTLE,
+          viewport: 'mobile',
+        },
+        jobId
+      ),
+      crawlWithViewport(
+        browser,
+        url,
+        {
+          width: 1440,
+          height: 900,
+          isMobile: false,
+          hasTouch: false,
+          throttle: null,
+          viewport: 'desktop',
+        },
+        jobId
+      ),
+    ])
 
     const techProfile = buildTechProfile(
       desktop.browserFingerprint,

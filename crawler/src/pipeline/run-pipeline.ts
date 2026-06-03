@@ -58,17 +58,20 @@ export async function runAIPipeline(
   scoredIssues.push(...scoreAxeViolations(signals.desktop.axeViolations ?? []))
   console.log('[pipeline] Job ' + jobId + ': ' + scoredIssues.length + ' total issues scored')
 
-  // Stage 1.5: vision scanner — insert visual issues into scoredIssues BEFORE Stage 2
-  // so Stage 2 can reason about them and form causal edges with visual signals
+  // Stage 1.5 + screenshot upload run concurrently — both take screenshot as input
+  // and are independent of each other. Stage 2 must wait for 1.5 to finish (it
+  // consumes visual issues), but upload result is only needed for the DB write.
   const client = getGroqClient()
+  let screenshotUrl: string | null = null
   if (screenshot) {
-    const visualIssues = await runVisualScanner(client, screenshot)
+    const [visualIssues, uploadedUrl] = await Promise.all([
+      runVisualScanner(client, screenshot),
+      uploadScreenshot(jobId, screenshot),
+    ])
     scoredIssues.push(...visualIssues)
+    screenshotUrl = uploadedUrl
     console.log('[pipeline] Job ' + jobId + ': Stage 1.5 complete — ' + visualIssues.length + ' visual issues')
   }
-
-  // Upload screenshot to Vercel Blob (non-blocking — proceeds even if upload fails)
-  const screenshotUrl = screenshot ? await uploadScreenshot(jobId, screenshot) : null
 
   // Merge _signals (raw CWV + Lighthouse) into tech_stack JSON column (no schema change needed)
   const techStackWithSignals = {
